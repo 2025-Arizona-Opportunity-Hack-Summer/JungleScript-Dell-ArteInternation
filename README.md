@@ -19,24 +19,21 @@
     ## Project Overview
     Brief description of your project and its goals.
 
-    ## Tech Stack
-    - Frontend: 
-    - Backend: 
-    - Database: 
-    - APIs: 
-    <!-- Add/modify as needed -->
+    Tech Stack
+    - Frontend: React.js
+    - Backend: Next.js
+    - Database: Supabase 
+    - APIs: Clerk
 
 
     ## Getting Started
     Instructions on how to set up and run your project locally.
 
-    ```bash
-    # Example commands
-    git clone [your-repo-link]
-    cd [your-repo-name]
-    npm install
-    npm start
-    ```
+    1. git clone git@github.com:2025-Arizona-Opportunity-Hack-Summer/JungleScript-Dell-ArteInternation.git
+    2. cd JungleScript-Dell-ArteInternation
+    3. npm install
+    4. npm run dev
+    
 
 
     ## Your next steps
