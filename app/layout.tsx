@@ -1,21 +1,32 @@
-import type React from "react"
-import type { Metadata } from "next"
-import "./globals.css"
+// file: app/layout.tsx
+
+import type { Metadata } from "next";
+import { Inter } from "next/font/google"; // Import Inter from next/font/google
+import { ClerkProvider } from "@clerk/nextjs";
+import "./globals.css";
+
+// Initialize the Inter font
+const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Dell'Arte Alumni Database",
-  description: "Connect with Dell'Arte International alumni worldwide",
-    generator: 'v0.dev'
-}
+  title: "Dell'Arte International Alumni",
+  description: "Alumni Database and Network",
+};
 
 export default function RootLayout({
   children,
 }: {
-  children: React.ReactNode
+  children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <body className="font-sans antialiased">{children}</body>
-    </html>
-  )
+    <ClerkProvider>
+      {/* Apply the font class to the <html> or <body> tag */}
+      <html lang="en" className={inter.className}>
+        <body>
+          {/* Your header and other layout components would go here */}
+          {children}
+        </body>
+      </html>
+    </ClerkProvider>
+  );
 }
