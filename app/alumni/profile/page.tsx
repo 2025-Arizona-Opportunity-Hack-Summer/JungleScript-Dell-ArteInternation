@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useUser } from "@clerk/nextjs"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -11,15 +12,6 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { LucideUser, Briefcase, Save, Eye } from "lucide-react"
-import Header from "@/components/layout/header"
-
-interface User {
-  id: string
-  email: string
-  role: string
-  firstName: string
-  lastName: string
-}
 
 interface ProfileData {
   firstName: string
@@ -74,7 +66,7 @@ const dellArteRoles = [
 ]
 
 export default function AlumniProfile() {
-  const [user, setUser] = useState<User | null>(null)
+  const { user } = useUser()
   const [profileData, setProfileData] = useState<ProfileData>({
     firstName: "",
     lastName: "",
@@ -96,26 +88,55 @@ export default function AlumniProfile() {
     dellArteRoles: [],
     profileVisibility: "public",
   })
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [saved, setSaved] = useState(false)
 
   useEffect(() => {
-    const userData = localStorage.getItem("user")
-    if (userData) {
-      const parsedUser = JSON.parse(userData)
-      setUser(parsedUser)
+    const fetchProfile = async () => {
+      if (!user) return
 
-      // Load existing profile data
-      setProfileData((prev) => ({
-        ...prev,
-        firstName: parsedUser.firstName || "",
-        lastName: parsedUser.lastName || "",
-        email: parsedUser.email || "",
-        programs: parsedUser.program ? [parsedUser.program] : [],
-        graduationYears: parsedUser.graduationYear ? [parsedUser.graduationYear] : [],
-      }))
+      setLoading(true)
+      try {
+        const response = await fetch("/api/alumni/profile")
+        if (response.ok) {
+          const data = await response.json()
+          if (data) {
+            setProfileData({
+              ...data,
+              phone: data.phone || "",
+              address: data.address || { street: "", city: "", state: "", country: "" },
+              programs: data.programsAttended || [],
+              graduationYears: data.graduationYears || [],
+              biography: data.biography || "",
+              websiteUrl: data.websiteUrl || "",
+              professionalTags: data.professionalTags || [],
+              dellArteRoles: data.dellArteRoles || [],
+              profileVisibility: data.profileVisibility || "public",
+              // Remap fields from the database to the form structure
+              currentRole: data.currentWork?.role || "",
+              currentOrganization: data.currentWork?.organization || "",
+            })
+          }
+        } else {
+          // If no profile exists, still populate with Clerk data
+          setProfileData((prev) => ({
+            ...prev,
+            firstName: user.firstName || "",
+            lastName: user.lastName || "",
+            email: user.primaryEmailAddress?.emailAddress || "",
+          }))
+        }
+      } catch (err) {
+        setError("Failed to load profile. Please try again.")
+        console.error(err)
+      } finally {
+        setLoading(false)
+      }
     }
-  }, [])
+
+    fetchProfile()
+  }, [user])
 
   const handleInputChange = (field: string, value: string) => {
     if (field.includes(".")) {
@@ -143,25 +164,41 @@ export default function AlumniProfile() {
 
   const handleSave = async () => {
     setLoading(true)
+    setError(null)
+    setSaved(false)
+    try {
+      const response = await fetch("/api/alumni/profile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(profileData),
+      })
 
-    // Simulate API call
-    setTimeout(() => {
+      if (!response.ok) {
+        throw new Error("Failed to save profile.")
+      }
       setSaved(true)
-      setLoading(false)
       setTimeout(() => setSaved(false), 3000)
-    }, 1000)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "An unknown error occurred.")
+    } finally {
+      setLoading(false)
+    }
   }
 
   const getInitials = (firstName: string, lastName: string) => {
     return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase()
   }
 
-  if (!user) return null
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div>Loading profile...</div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header />
-
       <main className="max-w-4xl mx-auto py-6 sm:px-6 lg:px-8">
         <div className="px-4 py-6 sm:px-0">
           <div className="mb-8">
@@ -172,6 +209,12 @@ export default function AlumniProfile() {
           {saved && (
             <Alert className="mb-6 border-green-200 bg-green-50">
               <AlertDescription className="text-green-800">Profile updated successfully!</AlertDescription>
+            </Alert>
+          )}
+
+          {error && (
+            <Alert variant="destructive" className="mb-6">
+              <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
 
@@ -380,7 +423,9 @@ export default function AlumniProfile() {
                         <Checkbox
                           id={tag}
                           checked={profileData.professionalTags.includes(tag)}
-                          onCheckedChange={(checked) => handleArrayChange("professionalTags", tag, checked as boolean)}
+                          onCheckedChange={(checked) =>
+                            handleArrayChange("professionalTags", tag, checked as boolean)
+                          }
                         />
                         <Label htmlFor={tag} className="text-sm">
                           {tag}
@@ -407,7 +452,9 @@ export default function AlumniProfile() {
                         <Checkbox
                           id={role}
                           checked={profileData.dellArteRoles.includes(role)}
-                          onCheckedChange={(checked) => handleArrayChange("dellArteRoles", role, checked as boolean)}
+                          onCheckedChange={(checked) =>
+                            handleArrayChange("dellArteRoles", role, checked as boolean)
+                          }
                         />
                         <Label htmlFor={role} className="text-sm">
                           {role}

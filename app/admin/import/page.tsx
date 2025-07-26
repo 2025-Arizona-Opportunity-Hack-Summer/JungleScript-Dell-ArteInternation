@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Upload, FileText, CheckCircle, XCircle, AlertCircle, Download } from "lucide-react"
 import Header from "@/components/layout/header"
+import { supabase } from "@/lib/supabase"
+import { useAlumniStore } from "@/lib/alumni-store"
 
 interface ValidationResult {
   valid: any[]
@@ -25,6 +27,7 @@ export default function DataImport() {
   const [isValidating, setIsValidating] = useState(false)
   const [isImporting, setIsImporting] = useState(false)
   const [importComplete, setImportComplete] = useState(false)
+  const { fetchAlumni } = useAlumniStore()
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const uploadedFile = event.target.files?.[0]
@@ -39,54 +42,103 @@ export default function DataImport() {
     if (!file) return
 
     setIsValidating(true)
+    setValidationResult(null)
 
-    // Simulate validation process
-    setTimeout(() => {
-      // Mock validation results
-      const mockResult: ValidationResult = {
-        valid: [
-          {
-            firstName: "John",
-            lastName: "Doe",
-            email: "john.doe@example.com",
-            address: { city: "New York", country: "USA" },
-            programsAttended: [{ program: "MFA Program", graduationYear: 2020 }],
+    const reader = new FileReader()
+    reader.onload = async (e) => {
+      try {
+        const text = e.target?.result
+        if (typeof text !== "string") {
+          throw new Error("File is not a valid text file.")
+        }
+        const records = JSON.parse(text)
+
+        if (!Array.isArray(records)) {
+          throw new Error("JSON file must contain an array of alumni records.")
+        }
+
+        if (!supabase) {
+          throw new Error("Supabase client is not available. Check your environment variables.")
+        }
+
+        const { data: existingAlumni, error: fetchError } = await supabase.from("alumni").select("email")
+
+        if (fetchError) {
+          throw new Error(`Error fetching existing alumni: ${fetchError.message}`)
+        }
+
+        const existingEmails = new Set(existingAlumni.map((a) => a.email))
+
+        const validationResult: ValidationResult = {
+          valid: [],
+          errors: [],
+          summary: {
+            total: records.length,
+            valid: 0,
+            errors: 0,
           },
-          {
-            firstName: "Jane",
-            lastName: "Smith",
-            email: "jane.smith@example.com",
-            address: { city: "Los Angeles", country: "USA" },
-            programsAttended: [{ program: "Summer Workshop", graduationYear: 2021 }],
-          },
-        ],
-        errors: [
-          { record: 3, error: "Missing required field 'email'" },
-          { record: 7, error: "Invalid graduation year format" },
-          { record: 12, error: "Missing required field 'firstName'" },
-        ],
-        summary: {
-          total: 15,
-          valid: 12,
-          errors: 3,
-        },
+        }
+
+        for (let i = 0; i < records.length; i++) {
+          const record = records[i]
+          const recordNumber = i + 1
+
+          if (!record.email || !record.firstName || !record.lastName) {
+            validationResult.errors.push({
+              record: recordNumber,
+              error: "Missing required fields: email, firstName, or lastName.",
+            })
+            validationResult.summary.errors++
+          } else if (existingEmails.has(record.email)) {
+            validationResult.errors.push({ record: recordNumber, error: `Email '${record.email}' already exists.` })
+            validationResult.summary.errors++
+          } else {
+            validationResult.valid.push(record)
+            validationResult.summary.valid++
+          }
+        }
+
+        setValidationResult(validationResult)
+      } catch (err: any) {
+        setValidationResult({
+          valid: [],
+          errors: [{ record: 0, error: `Error parsing JSON: ${err.message}` }],
+          summary: { total: 0, valid: 0, errors: 1 },
+        })
+      } finally {
+        setIsValidating(false)
       }
-
-      setValidationResult(mockResult)
-      setIsValidating(false)
-    }, 2000)
+    }
+    reader.readAsText(file)
   }
 
   const handleImport = async () => {
-    if (!validationResult) return
+    if (!validationResult || validationResult.valid.length === 0) return
 
     setIsImporting(true)
 
-    // Simulate import process
-    setTimeout(() => {
+    if (!supabase) {
+      setValidationResult((prev) => ({
+        ...prev!,
+        errors: [...(prev?.errors || []), { record: 0, error: "Supabase client is not available." }],
+      }))
       setIsImporting(false)
+      return
+    }
+
+    const { error } = await supabase.from("alumni").insert(validationResult.valid)
+
+    if (error) {
+      setValidationResult((prev) => ({
+        ...prev!,
+        errors: [...(prev?.errors || []), { record: 0, error: `Import failed: ${error.message}` }],
+      }))
+    } else {
       setImportComplete(true)
-    }, 3000)
+      await fetchAlumni() // Refresh the alumni store
+    }
+
+    setIsImporting(false)
   }
 
   const downloadTemplate = () => {

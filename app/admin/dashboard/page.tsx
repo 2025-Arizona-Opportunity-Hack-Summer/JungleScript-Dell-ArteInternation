@@ -5,24 +5,67 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Users, UserPlus, Mail, Upload, TrendingUp } from "lucide-react"
 import Header from "@/components/layout/header"
 import Link from "next/link"
-
-// Mock data - in real implementation this would come from Supabase
-const mockStats = {
-  totalAlumni: 247,
-  newAlumniLast30Days: 12,
-  activeUsers: 189,
-}
+import { useAlumniStore } from "@/lib/alumni-store"
 
 export default function AdminDashboard() {
-  const [stats, setStats] = useState(mockStats)
-  const [loading, setLoading] = useState(true)
+  const { alumni, loading, fetchAlumni } = useAlumniStore()
 
   useEffect(() => {
-    // Simulate loading data
-    setTimeout(() => {
-      setLoading(false)
-    }, 1000)
-  }, [])
+    fetchAlumni()
+  }, [fetchAlumni])
+
+  const totalAlumni = alumni.length
+  const newAlumniLast30Days = alumni.filter((a) => {
+    if (!a.lastUpdated) return false
+    const lastUpdated = new Date(a.lastUpdated)
+    const thirtyDaysAgo = new Date()
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+    return lastUpdated > thirtyDaysAgo
+  }).length
+
+  const now = new Date()
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+  const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
+
+  const newAlumniThisMonth = alumni.filter((a) => {
+    if (!a.lastUpdated) return false
+    return new Date(a.lastUpdated) >= startOfMonth
+  }).length
+
+  const totalAlumniAtStartOfMonth = totalAlumni - newAlumniThisMonth
+  const percentageChange =
+    totalAlumniAtStartOfMonth > 0 ? (newAlumniThisMonth / totalAlumniAtStartOfMonth) * 100 : 0
+
+  const thirtyDaysAgo = new Date()
+  thirtyDaysAgo.setDate(now.getDate() - 30)
+  const sixtyDaysAgo = new Date()
+  sixtyDaysAgo.setDate(now.getDate() - 60)
+
+  const newAlumniPrevious30Days = alumni.filter((a) => {
+    if (!a.lastUpdated) return false
+    const updatedDate = new Date(a.lastUpdated)
+    return updatedDate >= sixtyDaysAgo && updatedDate < thirtyDaysAgo
+  }).length
+
+  const thirtyDayTrend = newAlumniLast30Days - newAlumniPrevious30Days
+
+  const ninetyDaysAgo = new Date()
+  ninetyDaysAgo.setDate(now.getDate() - 90)
+  const oneEightyDaysAgo = new Date()
+  oneEightyDaysAgo.setDate(now.getDate() - 180)
+
+  const activeUsersLast90Days = alumni.filter((a) => {
+    if (!a.lastUpdated) return false
+    return new Date(a.lastUpdated) >= ninetyDaysAgo
+  }).length
+
+  const activeUsersPrevious90Days = alumni.filter((a) => {
+    if (!a.lastUpdated) return false
+    const updatedDate = new Date(a.lastUpdated)
+    return updatedDate >= oneEightyDaysAgo && updatedDate < ninetyDaysAgo
+  }).length
+
+  const activeUsersTrend = activeUsersLast90Days - activeUsersPrevious90Days
 
   const StatCard = ({
     title,
@@ -71,24 +114,36 @@ export default function AdminDashboard() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
             <StatCard
               title="Total Alumni"
-              value={stats.totalAlumni}
+              value={loading ? "..." : totalAlumni}
               description="Registered in the network"
               icon={Users}
-              trend="+2.5% from last month"
+              trend={
+                percentageChange === 0
+                  ? "0% from last month"
+                  : `${percentageChange > 0 ? "+" : ""}${percentageChange.toFixed(1)}% from last month`
+              }
             />
             <StatCard
               title="New Alumni (30 Days)"
-              value={stats.newAlumniLast30Days}
+              value={loading ? "..." : newAlumniLast30Days}
               description="Recently joined"
               icon={UserPlus}
-              trend="+12 this month"
+              trend={
+                thirtyDayTrend >= 0
+                  ? `+${thirtyDayTrend} from previous 30 days`
+                  : `${thirtyDayTrend} from previous 30 days`
+              }
             />
             <StatCard
               title="Active Users"
-              value={stats.activeUsers}
-              description="Logged in last 90 days"
+              value={loading ? "..." : activeUsersLast90Days}
+              description="Updated profile in last 90 days"
               icon={TrendingUp}
-              trend="76% of total alumni"
+              trend={
+                activeUsersTrend >= 0
+                  ? `+${activeUsersTrend} from previous 90 days`
+                  : `${activeUsersTrend} from previous 90 days`
+              }
             />
           </div>
 

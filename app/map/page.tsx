@@ -1,24 +1,25 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useMemo } from "react"
+import { useUser } from "@clerk/nextjs"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Search, MapPin, ChevronDown, ChevronUp, ChevronLeft, ArrowLeft, Share2, LucideUser } from "lucide-react"
-import Header from "@/components/layout/header"
 import type mapboxgl from "mapbox-gl"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Phone, Mail, Globe, Linkedin, Instagram, Youtube } from "lucide-react"
 import { useAlumniStore, type AlumniProfile } from "@/lib/alumni-store"
-import { isSupabaseConfigured } from "@/lib/supabase"
+import { format } from "date-fns"
 
 export default function AlumniMap() {
+  const { user } = useUser()
   const { alumni, loading, error, fetchAlumni } = useAlumniStore()
 
   const mapContainer = useRef<HTMLDivElement>(null)
   const map = useRef<mapboxgl.Map | null>(null)
-  const mapboxRef = useRef<typeof import("mapbox-gl") | null>(null)
+  const mapboxRef = useRef<typeof import("mapbox-gl")["default"] | null>(null)
   const [mapboxReady, setMapboxReady] = useState(false)
   const [markers, setMarkers] = useState<Map<string, any>>(new Map())
   const [selectedAlumniId, setSelectedAlumniId] = useState<string | null>(null)
@@ -37,7 +38,7 @@ export default function AlumniMap() {
   const [showContactModal, setShowContactModal] = useState(false)
   const [showWebsiteModal, setShowWebsiteModal] = useState(false)
   const [showWelcomeModal, setShowWelcomeModal] = useState(false)
-  const [user, setUser] = useState<{ firstName: string; lastName: string } | null>(null)
+  const [isBioExpanded, setIsBioExpanded] = useState(false)
 
   const searchInputRef = useRef<HTMLInputElement>(null)
 
@@ -46,14 +47,16 @@ export default function AlumniMap() {
     fetchAlumni()
   }, [fetchAlumni])
 
-  const filteredAlumni = alumni.filter((alumni) => {
-    const searchLower = searchQuery.toLowerCase()
-    return (
-      `${alumni.firstName} ${alumni.lastName}`.toLowerCase().includes(searchLower) ||
-      `${alumni.address.city}, ${alumni.address.state || alumni.address.country}`.toLowerCase().includes(searchLower) ||
-      alumni.tags.some((tag) => tag.toLowerCase().includes(searchLower))
-    )
-  })
+  const filteredAlumni = useMemo(() => {
+    return alumni.filter((alumni) => {
+      const searchLower = searchQuery.toLowerCase()
+      return (
+        `${alumni.firstName} ${alumni.lastName}`.toLowerCase().includes(searchLower) ||
+        `${alumni.address.city}, ${alumni.address.state || alumni.address.country}`.toLowerCase().includes(searchLower) ||
+        alumni.tags.some((tag) => tag.toLowerCase().includes(searchLower))
+      )
+    })
+  }, [alumni, searchQuery])
 
   // Check if mobile
   useEffect(() => {
@@ -66,18 +69,19 @@ export default function AlumniMap() {
     return () => window.removeEventListener("resize", checkMobile)
   }, [])
 
-  // Load user data and show welcome modal
+  // Show welcome modal for non-admin users
   useEffect(() => {
-    const userData = localStorage.getItem("user")
-    if (userData) {
-      const parsedUser = JSON.parse(userData)
-      setUser(parsedUser)
-      // Only show welcome modal for non-admin users
-      if (parsedUser.role !== "admin") {
+    if (user) {
+      // Check for a flag in localStorage to see if the modal has been shown in this session
+      const welcomeModalShown = sessionStorage.getItem("welcomeModalShown")
+      const userRole = user.publicMetadata?.role as string | undefined
+
+      if (!welcomeModalShown && userRole !== "admin") {
         setShowWelcomeModal(true)
+        sessionStorage.setItem("welcomeModalShown", "true")
       }
     }
-  }, [])
+  }, [user])
 
   // Dynamically load Mapbox GL JS & its CSS
   useEffect(() => {
@@ -109,23 +113,25 @@ export default function AlumniMap() {
   useEffect(() => {
     const newGeojson = {
       type: "FeatureCollection",
-      features: filteredAlumni.map((alumni) => ({
-        type: "Feature",
-        geometry: {
-          type: "Point",
-          coordinates: [alumni.address.longitude, alumni.address.latitude],
-        },
-        properties: {
-          id: alumni.id.toString(),
-          firstName: alumni.firstName,
-          lastName: alumni.lastName,
-          location: `${alumni.address.city}, ${alumni.address.state || alumni.address.country}`,
-          program: alumni.programsAttended[0]?.program || "Dell'Arte Alumni",
-        },
-      })),
+      features: filteredAlumni
+        .filter((alumni) => alumni.address?.longitude && alumni.address?.latitude)
+        .map((alumni) => ({
+          type: "Feature",
+          geometry: {
+            type: "Point",
+            coordinates: [alumni.address.longitude, alumni.address.latitude],
+          },
+          properties: {
+            id: alumni.id.toString(),
+            firstName: alumni.firstName,
+            lastName: alumni.lastName,
+            location: `${alumni.address.city}, ${alumni.address.state || alumni.address.country}`,
+            program: alumni.programsAttended[0]?.program || "Dell'Arte Alumni",
+          },
+        })),
     }
     setGeojson(newGeojson)
-  }, [searchQuery, alumni])
+  }, [filteredAlumni])
 
   // Initialize map
   useEffect(() => {
@@ -190,6 +196,13 @@ export default function AlumniMap() {
       `
       el.textContent = initials
 
+      el.addEventListener("click", () => {
+        const clickedAlumni = alumni.find((a) => a.id.toString() === feature.properties.id)
+        if (clickedAlumni) {
+          handleAlumniClick(clickedAlumni)
+        }
+      })
+
       const marker = new mapboxRef.current.Marker(el).setLngLat(feature.geometry.coordinates).addTo(map.current)
 
       newMarkers.set(feature.properties.id, marker)
@@ -207,6 +220,7 @@ export default function AlumniMap() {
   }
 
   const getLastActive = (alumni: AlumniProfile) => {
+    if (!alumni.lastUpdated) return "Last updated info not available"
     const lastUpdated = new Date(alumni.lastUpdated)
     const now = new Date()
     const diffTime = Math.abs(now.getTime() - lastUpdated.getTime())
@@ -322,7 +336,7 @@ export default function AlumniMap() {
       setSidebarExpanded(true)
     }
 
-    if (map.current) {
+    if (map.current && alumni.address?.longitude && alumni.address?.latitude) {
       if (isMobile) {
         // On mobile, use padding to account for the profile panel
         // This ensures the marker appears in the visible area above the panel
@@ -354,10 +368,16 @@ export default function AlumniMap() {
     setSelectedAlumniId(null)
   }
 
+  const getFormattedDate = () => {
+    if (selectedAlumni && selectedAlumni.lastUpdated) {
+      return format(new Date(selectedAlumni.lastUpdated), "MMMM d, yyyy")
+    }
+    return "N/A"
+  }
+
   if (error) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <Header />
         <main className="flex flex-col items-center justify-center py-20">
           <p className="text-lg font-semibold text-red-600">Error: {error}</p>
           <Button onClick={() => fetchAlumni()} className="mt-4">
@@ -371,7 +391,6 @@ export default function AlumniMap() {
   if (!mapboxReady && !process.env.NEXT_PUBLIC_MAPBOX_API) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <Header />
         <main className="flex flex-col items-center justify-center py-20">
           <p className="text-lg font-semibold text-gray-700">
             Map view is unavailable – missing or invalid Mapbox credentials.
@@ -383,22 +402,6 @@ export default function AlumniMap() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header />
-
-      {/* Configuration Warning Banner */}
-      {!isSupabaseConfigured && (
-        <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4">
-          <div className="flex">
-            <div className="ml-3">
-              <p className="text-sm text-yellow-700">
-                <strong>Demo Mode:</strong> Using sample data. Configure Supabase environment variables for full
-                functionality.
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Map Container with Margins */}
       <main className="p-6">
         <div className="relative h-[calc(100vh-128px)] bg-gray-400 rounded-2xl overflow-hidden shadow-lg">
@@ -485,10 +488,11 @@ export default function AlumniMap() {
                     className={`bg-white rounded-t-xl shadow-lg flex flex-col ${viewMode === "detail" ? "h-auto max-h-[50vh]" : "h-[50vh]"}`}
                   >
                     {/* Header */}
-                    <div className="p-4 border-b border-gray-200 flex items-center justify-between">
+                    <div className="p-2 border-b border-gray-200 flex items-center justify-between">
                       {viewMode === "detail" ? (
-                        <Button variant="ghost" size="icon" onClick={handleBackToList}>
-                          <ArrowLeft className="h-4 w-4" />
+                        <Button variant="ghost" size="sm" onClick={handleBackToList}>
+                          <ArrowLeft className="h-4 w-4 mr-1" />
+                          <span className="font-normal">Back</span>
                         </Button>
                       ) : (
                         <Button variant="ghost" size="icon" onClick={() => setSidebarExpanded(false)}>
@@ -548,18 +552,18 @@ export default function AlumniMap() {
                       ) : (
                         /* Detail View */
                         selectedAlumni && (
-                          <div className="space-y-4">
-                            <div className="flex items-center space-x-4">
-                              <Avatar className="h-16 w-16">
-                                <AvatarFallback className="text-xl bg-red-100 text-red-700">
+                          <div className="space-y-3">
+                            <div className="flex items-center space-x-3">
+                              <Avatar className="h-14 w-14">
+                                <AvatarFallback className="text-lg bg-red-100 text-red-700">
                                   {getInitials(selectedAlumni.firstName, selectedAlumni.lastName)}
                                 </AvatarFallback>
                               </Avatar>
                               <div className="flex-1">
-                                <h2 className="text-xl font-bold text-gray-900 mb-1">
+                                <h2 className="text-lg font-bold text-gray-900">
                                   {selectedAlumni.firstName} {selectedAlumni.lastName}
                                 </h2>
-                                <p className="text-gray-600 flex items-center">
+                                <p className="text-sm text-gray-600 flex items-center">
                                   <MapPin className="h-4 w-4 mr-1" />
                                   {getLocation(selectedAlumni)}
                                 </p>
@@ -567,22 +571,33 @@ export default function AlumniMap() {
                               </div>
                             </div>
 
-                            <div className="space-y-3">
+                            <div className="space-y-2 text-sm">
                               <div>
-                                <h3 className="font-semibold text-gray-900 mb-1">Current Work</h3>
-                                <p className="text-gray-700">{selectedAlumni.currentWork?.title}</p>
-                                <p className="text-sm text-gray-500">{selectedAlumni.currentWork?.organization}</p>
+                                <h3 className="font-semibold text-gray-800 mb-1">Current Work</h3>
+                                <p className="text-gray-600">{selectedAlumni.currentWork?.title || "Not specified"}</p>
+                                <p className="text-xs text-gray-500">
+                                  {selectedAlumni.currentWork?.organization || "Not specified"}
+                                </p>
                               </div>
 
                               <div>
-                                <h3 className="font-semibold text-gray-900 mb-1">Program</h3>
-                                <p className="text-gray-700">{selectedAlumni.programsAttended[0]?.program}</p>
-                                <p className="text-sm text-gray-500">{selectedAlumni.programsAttended[0]?.cohort}</p>
+                                <h3 className="font-semibold text-gray-800 mb-1">Program</h3>
+                                <p className="text-gray-600">{selectedAlumni.programsAttended[0]?.program}</p>
+                                <p className="text-xs text-gray-500">{selectedAlumni.programsAttended[0]?.cohort}</p>
                               </div>
 
                               <div>
-                                <h3 className="font-semibold text-gray-900 mb-1">About</h3>
-                                <p className="text-gray-700 text-sm leading-relaxed">{selectedAlumni.biography}</p>
+                                <h3 className="font-semibold text-gray-800 mb-1">About</h3>
+                                <div
+                                  className={`text-gray-600 text-xs leading-relaxed custom-scroll ${
+                                    isBioExpanded ? "max-h-24 overflow-y-auto" : "line-clamp-2"
+                                  }`}
+                                >
+                                  {selectedAlumni.biography}
+                                </div>
+                                <Button variant="link" size="sm" className="p-0 h-auto" onClick={() => setIsBioExpanded(!isBioExpanded)}>
+                                  {isBioExpanded ? "Read less" : "Read more"}
+                                </Button>
                               </div>
 
                               <div className="flex space-x-2 pt-2">
@@ -590,10 +605,10 @@ export default function AlumniMap() {
                                   <Mail className="h-4 w-4 mr-2" />
                                   Contact
                                 </Button>
-                                {(selectedAlumni.portfolioLinks.website ||
-                                  selectedAlumni.portfolioLinks.linkedin ||
-                                  selectedAlumni.portfolioLinks.instagram ||
-                                  selectedAlumni.portfolioLinks.youtube) && (
+                                {(selectedAlumni.portfolioLinks?.website ||
+                                  selectedAlumni.portfolioLinks?.linkedin ||
+                                  selectedAlumni.portfolioLinks?.instagram ||
+                                  selectedAlumni.portfolioLinks?.youtube) && (
                                   <Button
                                     size="sm"
                                     variant="outline"
@@ -632,13 +647,13 @@ export default function AlumniMap() {
                 className={`bg-white rounded-xl shadow-lg overflow-hidden flex flex-col ${viewMode === "detail" ? "h-auto" : "h-full"}`}
               >
                 {/* Fixed Header with Search or Back Button */}
-                <div className="p-4 border-b border-gray-200 flex-shrink-0">
+                <div className="p-3 border-b border-gray-200 flex-shrink-0">
                   {viewMode === "detail" ? (
                     <div className="flex items-center">
-                      <Button variant="ghost" size="icon" onClick={handleBackToList} className="mr-2">
+                      <Button variant="ghost" size="sm" onClick={handleBackToList} className="mr-2 h-8 w-8 p-0">
                         <ArrowLeft className="h-4 w-4" />
                       </Button>
-                      <h2 className="font-semibold text-gray-900">Profile Details</h2>
+                      <h2 className="font-medium text-gray-800">Profile Details</h2>
                     </div>
                   ) : (
                     <div className="relative">
@@ -693,41 +708,57 @@ export default function AlumniMap() {
                   ) : (
                     /* Detail View */
                     selectedAlumni && (
-                      <div className="space-y-6">
+                      <div className="space-y-4">
                         <div className="flex items-center space-x-4">
-                          <Avatar className="h-20 w-20">
-                            <AvatarFallback className="text-2xl bg-red-100 text-red-700">
+                          <Avatar className="h-16 w-16">
+                            <AvatarFallback className="text-xl bg-red-100 text-red-700">
                               {getInitials(selectedAlumni.firstName, selectedAlumni.lastName)}
                             </AvatarFallback>
                           </Avatar>
                           <div className="flex-1">
-                            <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                            <h2 className="text-xl font-bold text-gray-900 mb-1">
                               {selectedAlumni.firstName} {selectedAlumni.lastName}
                             </h2>
-                            <p className="text-gray-600 flex items-center mb-1">
+                            <p className="text-gray-600 flex items-center mb-1 text-sm">
                               <MapPin className="h-4 w-4 mr-1" />
                               {getLocation(selectedAlumni)}
                             </p>
-                            <p className="text-sm text-gray-500">{getLastActive(selectedAlumni)}</p>
+                            <p className="text-xs text-gray-500">{getLastActive(selectedAlumni)}</p>
                           </div>
                         </div>
 
-                        <div className="space-y-4">
+                        <div className="space-y-3 text-sm">
                           <div>
-                            <h3 className="font-semibold text-gray-900 mb-2">Current Work</h3>
-                            <p className="text-gray-700">{selectedAlumni.currentWork?.title}</p>
-                            <p className="text-sm text-gray-500">{selectedAlumni.currentWork?.organization}</p>
+                            <h3 className="font-semibold text-gray-800 mb-1">Current Work</h3>
+                            <p className="text-gray-600">{selectedAlumni.currentWork?.title || "Not specified"}</p>
+                            <p className="text-xs text-gray-500">
+                              {selectedAlumni.currentWork?.organization || "Not specified"}
+                            </p>
                           </div>
 
                           <div>
-                            <h3 className="font-semibold text-gray-900 mb-2">Program</h3>
-                            <p className="text-gray-700">{selectedAlumni.programsAttended[0]?.program}</p>
-                            <p className="text-sm text-gray-500">{selectedAlumni.programsAttended[0]?.cohort}</p>
+                            <h3 className="font-semibold text-gray-800 mb-1">Program</h3>
+                            <p className="text-gray-600">{selectedAlumni.programsAttended[0]?.program}</p>
+                            <p className="text-xs text-gray-500">{selectedAlumni.programsAttended[0]?.cohort}</p>
                           </div>
 
                           <div>
-                            <h3 className="font-semibold text-gray-900 mb-2">About</h3>
-                            <p className="text-gray-700 leading-relaxed">{selectedAlumni.biography}</p>
+                            <h3 className="font-semibold text-gray-800 mb-1">About</h3>
+                            <div className={`space-y-2 ${isBioExpanded ? "max-h-36 overflow-y-auto" : ""}`}>
+                              <div
+                                className={`text-gray-600 text-xs leading-relaxed ${!isBioExpanded ? "line-clamp-4" : ""}`}
+                              >
+                                {selectedAlumni.biography}
+                              </div>
+                            </div>
+                            <Button
+                              variant="link"
+                              size="sm"
+                              className="p-0 h-auto mt-1"
+                              onClick={() => setIsBioExpanded(!isBioExpanded)}
+                            >
+                              {isBioExpanded ? "Read less" : "Read more"}
+                            </Button>
                           </div>
 
                           <div className="flex space-x-3 pt-4">
@@ -735,10 +766,10 @@ export default function AlumniMap() {
                               <Mail className="h-4 w-4 mr-2" />
                               Contact
                             </Button>
-                            {(selectedAlumni.portfolioLinks.website ||
-                              selectedAlumni.portfolioLinks.linkedin ||
-                              selectedAlumni.portfolioLinks.instagram ||
-                              selectedAlumni.portfolioLinks.youtube) && (
+                            {(selectedAlumni.portfolioLinks?.website ||
+                              selectedAlumni.portfolioLinks?.linkedin ||
+                              selectedAlumni.portfolioLinks?.instagram ||
+                              selectedAlumni.portfolioLinks?.youtube) && (
                               <Button variant="outline" onClick={() => handleWebsiteClick(selectedAlumni)}>
                                 <Globe className="h-4 w-4" />
                               </Button>
@@ -759,11 +790,10 @@ export default function AlumniMap() {
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
               <DialogTitle className="text-center text-xl">Welcome, {user?.firstName}! 🎭</DialogTitle>
-              <DialogDescription className="text-center text-gray-600">
-                Ready to connect with the Dell'Arte community?
-              </DialogDescription>
             </DialogHeader>
             <div className="space-y-3">
+              <p className="text-center text-gray-600 mb-6">Ready to connect with the Dell'Arte community?</p>
+
               <Button
                 onClick={handleSearchFocus}
                 className="w-full flex items-center justify-center space-x-2 bg-red-600 hover:bg-red-700"
@@ -802,9 +832,6 @@ export default function AlumniMap() {
               <Mail className="h-5 w-5 mr-2" />
               Contact {selectedAlumni?.firstName} {selectedAlumni?.lastName}
             </DialogTitle>
-            <DialogDescription>
-              Get in touch with {selectedAlumni?.firstName} through their preferred contact methods.
-            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             {selectedAlumni?.email && (
@@ -841,12 +868,9 @@ export default function AlumniMap() {
               <Globe className="h-5 w-5 mr-2" />
               {selectedAlumni?.firstName}'s Links
             </DialogTitle>
-            <DialogDescription>
-              Explore {selectedAlumni?.firstName}'s professional and social media presence.
-            </DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
-            {selectedAlumni?.portfolioLinks.website && (
+            {selectedAlumni?.portfolioLinks?.website && (
               <a
                 href={formatSocialUrl("website", selectedAlumni.portfolioLinks.website)}
                 target="_blank"
@@ -860,7 +884,7 @@ export default function AlumniMap() {
                 </div>
               </a>
             )}
-            {selectedAlumni?.portfolioLinks.linkedin && (
+            {selectedAlumni?.portfolioLinks?.linkedin && (
               <a
                 href={formatSocialUrl("linkedin", selectedAlumni.portfolioLinks.linkedin)}
                 target="_blank"
@@ -874,7 +898,7 @@ export default function AlumniMap() {
                 </div>
               </a>
             )}
-            {selectedAlumni?.portfolioLinks.instagram && (
+            {selectedAlumni?.portfolioLinks?.instagram && (
               <a
                 href={formatSocialUrl("instagram", selectedAlumni.portfolioLinks.instagram)}
                 target="_blank"
@@ -888,7 +912,7 @@ export default function AlumniMap() {
                 </div>
               </a>
             )}
-            {selectedAlumni?.portfolioLinks.youtube && (
+            {selectedAlumni?.portfolioLinks?.youtube && (
               <a
                 href={formatSocialUrl("youtube", selectedAlumni.portfolioLinks.youtube)}
                 target="_blank"

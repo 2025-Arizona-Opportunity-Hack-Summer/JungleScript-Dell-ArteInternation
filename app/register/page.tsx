@@ -1,17 +1,15 @@
 "use client"
 
-import type React from "react"
-
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useUser } from "@clerk/nextjs"
 import { useRouter } from "next/navigation"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Theater, ArrowLeft } from "lucide-react"
-import Link from "next/link"
+import { Save } from "lucide-react"
 
 const programs = [
   "MFA in Ensemble-Based Physical Theatre",
@@ -21,184 +19,227 @@ const programs = [
   "Pedagogy Program",
 ]
 
-const graduationYears = Array.from({ length: 30 }, (_, i) => new Date().getFullYear() - i)
-
 export default function RegisterPage() {
+  const { user } = useUser()
+  const router = useRouter()
   const [formData, setFormData] = useState({
+    phone: "",
+    address: {
+      street: "",
+      city: "",
+      state: "",
+      country: "",
+    },
+    programs: [] as string[],
+    graduationYears: [] as string[],
+    currentRole: "",
+    currentOrganization: "",
     firstName: "",
     lastName: "",
-    email: "",
-    password: "",
-    confirmPassword: "",
-    graduationYear: "",
-    program: "",
   })
-  const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
-  const router = useRouter()
+  const [error, setError] = useState<string | null>(null)
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-    setError("")
-
-    if (formData.password !== formData.confirmPassword) {
-      setError("Passwords do not match")
-      setLoading(false)
-      return
+  useEffect(() => {
+    if (user) {
+      setFormData((prev) => ({
+        ...prev,
+        firstName: user.firstName || "",
+        lastName: user.lastName || "",
+      }))
     }
-
-    if (formData.password.length < 8) {
-      setError("Password must be at least 8 characters long")
-      setLoading(false)
-      return
-    }
-
-    // Mock registration
-    setTimeout(() => {
-      localStorage.setItem(
-        "user",
-        JSON.stringify({
-          id: Date.now().toString(),
-          email: formData.email,
-          role: "alumni",
-          firstName: formData.firstName,
-          lastName: formData.lastName,
-          graduationYear: formData.graduationYear,
-          program: formData.program,
-        }),
-      )
-      router.push("/alumni/dashboard")
-    }, 1000)
-  }
+  }, [user])
 
   const handleInputChange = (field: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [field]: value }))
+    if (field.includes(".")) {
+      const [parent, child] = field.split(".")
+      setFormData((prev) => ({
+        ...prev,
+        [parent]: {
+          ...(prev[parent as keyof typeof formData] as any),
+          [child]: value,
+        },
+      }))
+    } else {
+      setFormData((prev) => ({ ...prev, [field]: value }))
+    }
+  }
+
+  const handleArrayChange = (field: string, value: string, checked: boolean) => {
+    setFormData((prev) => ({
+      ...prev,
+      [field]: checked
+        ? [...(prev[field as keyof typeof formData] as string[]), value]
+        : (prev[field as keyof typeof formData] as string[]).filter((item) => item !== value),
+    }))
+  }
+
+  const handleSubmit = async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const response = await fetch("/api/alumni/profile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      })
+      if (!response.ok) {
+        throw new Error("Failed to save profile.")
+      }
+      router.push("/map") // Redirect to the map page on success
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "An unknown error occurred.")
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-red-50 to-amber-50 flex items-center justify-center p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <div className="flex justify-center mb-4">
-            <div className="bg-red-600 p-3 rounded-full">
-              <Theater className="h-8 w-8 text-white" />
-            </div>
-          </div>
-          <CardTitle className="text-2xl font-bold text-gray-900">Join Dell'Arte Alumni</CardTitle>
-          <CardDescription>Create your account to connect with fellow alumni</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <main className="max-w-2xl w-full mx-auto py-6 sm:px-6 lg:px-8">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-2xl font-bold">Complete Your Profile</CardTitle>
+            <CardDescription>
+              Welcome! Please fill out the information below to finish setting up your account.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-8">
             {error && (
               <Alert variant="destructive">
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
             )}
 
-            <div className="grid grid-cols-2 gap-4">
+            {/* Basic Information */}
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="firstName">First Name</Label>
+                  <Input
+                    id="firstName"
+                    value={formData.firstName}
+                    onChange={(e) => handleInputChange("firstName", e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="lastName">Last Name</Label>
+                  <Input
+                    id="lastName"
+                    value={formData.lastName}
+                    onChange={(e) => handleInputChange("lastName", e.target.value)}
+                  />
+                </div>
+              </div>
+
               <div className="space-y-2">
-                <Label htmlFor="firstName">First Name</Label>
+                <Label htmlFor="phone">Phone</Label>
                 <Input
-                  id="firstName"
-                  value={formData.firstName}
-                  onChange={(e) => handleInputChange("firstName", e.target.value)}
-                  required
+                  id="phone"
+                  value={formData.phone}
+                  onChange={(e) => handleInputChange("phone", e.target.value)}
+                  placeholder="(555) 123-4567"
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="lastName">Last Name</Label>
-                <Input
-                  id="lastName"
-                  value={formData.lastName}
-                  onChange={(e) => handleInputChange("lastName", e.target.value)}
-                  required
-                />
+
+              <div className="space-y-4">
+                <Label>Address</Label>
+                <div className="grid grid-cols-1 gap-4">
+                  <Input
+                    placeholder="Street Address"
+                    value={formData.address.street}
+                    onChange={(e) => handleInputChange("address.street", e.target.value)}
+                  />
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <Input
+                      placeholder="City"
+                      value={formData.address.city}
+                      onChange={(e) => handleInputChange("address.city", e.target.value)}
+                    />
+                    <Input
+                      placeholder="State/Province"
+                      value={formData.address.state}
+                      onChange={(e) => handleInputChange("address.state", e.target.value)}
+                    />
+                    <Input
+                      placeholder="Country"
+                      value={formData.address.country}
+                      onChange={(e) => handleInputChange("address.country", e.target.value)}
+                    />
+                  </div>
+                </div>
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                value={formData.email}
-                onChange={(e) => handleInputChange("email", e.target.value)}
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="program">Program</Label>
-              <Select value={formData.program} onValueChange={(value) => handleInputChange("program", value)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select your program" />
-                </SelectTrigger>
-                <SelectContent>
+            {/* Academic Information */}
+            <div className="space-y-6">
+              <div className="space-y-4">
+                <Label>Programs Attended</Label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {programs.map((program) => (
-                    <SelectItem key={program} value={program}>
-                      {program}
-                    </SelectItem>
+                    <div key={program} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={program}
+                        checked={formData.programs.includes(program)}
+                        onCheckedChange={(checked) => handleArrayChange("programs", program, checked as boolean)}
+                      />
+                      <Label htmlFor={program} className="text-sm font-normal">
+                        {program}
+                      </Label>
+                    </div>
                   ))}
-                </SelectContent>
-              </Select>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="graduationYears">Graduation Years</Label>
+                <Input
+                  id="graduationYears"
+                  placeholder="e.g., 2020, 2022"
+                  value={formData.graduationYears.join(", ")}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      graduationYears: e.target.value.split(",").map((year) => year.trim()).filter(Boolean),
+                    }))
+                  }
+                />
+              </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="graduationYear">Graduation Year</Label>
-              <Select
-                value={formData.graduationYear}
-                onValueChange={(value) => handleInputChange("graduationYear", value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select graduation year" />
-                </SelectTrigger>
-                <SelectContent>
-                  {graduationYears.map((year) => (
-                    <SelectItem key={year} value={year.toString()}>
-                      {year}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            {/* Professional Information */}
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="currentRole">Current Role</Label>
+                  <Input
+                    id="currentRole"
+                    placeholder="e.g., Theatre Director"
+                    value={formData.currentRole}
+                    onChange={(e) => handleInputChange("currentRole", e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="currentOrganization">Current Organization</Label>
+                  <Input
+                    id="currentOrganization"
+                    placeholder="e.g., Portland Theatre Collective"
+                    value={formData.currentOrganization}
+                    onChange={(e) => handleInputChange("currentOrganization", e.target.value)}
+                  />
+                </div>
+              </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                value={formData.password}
-                onChange={(e) => handleInputChange("password", e.target.value)}
-                placeholder="At least 8 characters"
-                required
-              />
+            <div className="flex justify-end">
+              <Button onClick={handleSubmit} disabled={loading} className="bg-red-600 hover:bg-red-700">
+                <Save className="h-4 w-4 mr-2" />
+                {loading ? "Saving..." : "Complete Profile"}
+              </Button>
             </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirm Password</Label>
-              <Input
-                id="confirmPassword"
-                type="password"
-                value={formData.confirmPassword}
-                onChange={(e) => handleInputChange("confirmPassword", e.target.value)}
-                required
-              />
-            </div>
-
-            <Button type="submit" className="w-full bg-red-600 hover:bg-red-700" disabled={loading}>
-              {loading ? "Creating Account..." : "Create Account"}
-            </Button>
-          </form>
-
-          <div className="mt-6 text-center">
-            <Link href="/" className="inline-flex items-center text-sm text-red-600 hover:underline">
-              <ArrowLeft className="h-4 w-4 mr-1" />
-              Back to Sign In
-            </Link>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </main>
     </div>
   )
 }

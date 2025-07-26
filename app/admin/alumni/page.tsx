@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import type { ReactNode } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -15,6 +16,17 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import {
@@ -30,9 +42,12 @@ import {
   Mail,
   Globe,
   AlertCircle,
+  X,
 } from "lucide-react"
 import Header from "@/components/layout/header"
 import { useAlumniStore, type AlumniProfile } from "@/lib/alumni-store"
+import type { ReactElement } from "react"
+import type { NextPage } from "next"
 
 const programs = [
   "MFA in Ensemble Based Physical Theatre",
@@ -58,7 +73,313 @@ const allTags = [
   "cultural preservation",
 ]
 
-export default function AlumniManagement() {
+const ArrayInput = ({
+  label,
+  items,
+  setItems,
+}: {
+  label: string
+  items: string[]
+  setItems: (items: string[]) => void
+}) => {
+  const [inputValue, setInputValue] = useState("")
+
+  const handleAddItem = () => {
+    if (inputValue && !items.includes(inputValue)) {
+      setItems([...items, inputValue])
+      setInputValue("")
+    }
+  }
+
+  const handleRemoveItem = (itemToRemove: string) => {
+    setItems(items.filter((item) => item !== itemToRemove))
+  }
+
+  return (
+    <div>
+      <Label>{label}</Label>
+      <div className="flex items-center space-x-2 mt-2">
+        <Input value={inputValue} onChange={(e) => setInputValue(e.target.value)} placeholder={`Add a ${label.toLowerCase().slice(0, -1)}...`} />
+        <Button type="button" variant="outline" onClick={handleAddItem}>
+          Add
+        </Button>
+      </div>
+      <div className="flex flex-wrap gap-2 mt-2">
+        {items.map((item) => (
+          <Badge key={item} variant="secondary">
+            {item}
+            <button type="button" className="ml-2" onClick={() => handleRemoveItem(item)}>
+              <X className="h-3 w-3" />
+            </button>
+          </Badge>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+const EditForm = ({
+  editingAlumni,
+  updateEditingAlumni,
+  saveError,
+}: {
+  editingAlumni: AlumniProfile | null
+  updateEditingAlumni: (field: string, value: any) => void
+  saveError: string | null
+}) => {
+  if (!editingAlumni) return null
+
+  return (
+    <div className="space-y-4 max-h-[60vh] overflow-y-auto p-1">
+      {saveError && (
+        <div className="flex items-center space-x-2 p-3 bg-red-50 border border-red-200 rounded-md">
+          <AlertCircle className="h-4 w-4 text-red-600" />
+          <p className="text-sm text-red-700">{saveError}</p>
+        </div>
+      )}
+
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <Label htmlFor="firstName">First Name</Label>
+          <Input
+            id="firstName"
+            value={editingAlumni.firstName}
+            onChange={(e) => updateEditingAlumni("firstName", e.target.value)}
+          />
+        </div>
+        <div>
+          <Label htmlFor="lastName">Last Name</Label>
+          <Input
+            id="lastName"
+            value={editingAlumni.lastName}
+            onChange={(e) => updateEditingAlumni("lastName", e.target.value)}
+          />
+        </div>
+      </div>
+
+      <div>
+        <Label htmlFor="email">Email</Label>
+        <Input
+          id="email"
+          type="email"
+          value={editingAlumni.email}
+          onChange={(e) => updateEditingAlumni("email", e.target.value)}
+        />
+      </div>
+
+      <div>
+        <Label htmlFor="phone">Phone</Label>
+        <Input
+          id="phone"
+          value={editingAlumni.phone || ""}
+          onChange={(e) => updateEditingAlumni("phone", e.target.value)}
+        />
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <Label htmlFor="city">City</Label>
+          <Input
+            id="city"
+            value={editingAlumni.address.city}
+            onChange={(e) => updateEditingAlumni("address.city", e.target.value)}
+          />
+        </div>
+        <div>
+          <Label htmlFor="state">State / Province</Label>
+          <Input
+            id="state"
+            value={editingAlumni.address.state || ""}
+            onChange={(e) => updateEditingAlumni("address.state", e.target.value)}
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <Label htmlFor="zipCode">Zip / Postal Code</Label>
+          <Input
+            id="zipCode"
+            value={editingAlumni.address.zipCode || ""}
+            onChange={(e) => updateEditingAlumni("address.zipCode", e.target.value)}
+          />
+        </div>
+        <div>
+          <Label htmlFor="country">Country</Label>
+          <Input
+            id="country"
+            value={editingAlumni.address.country}
+            onChange={(e) => updateEditingAlumni("address.country", e.target.value)}
+          />
+        </div>
+      </div>
+
+      <div>
+        <Label htmlFor="biography">Biography</Label>
+        <Textarea
+          id="biography"
+          value={editingAlumni.biography || ""}
+          onChange={(e) => updateEditingAlumni("biography", e.target.value)}
+          rows={3}
+        />
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <Label htmlFor="jobTitle">Job Title</Label>
+          <Input
+            id="jobTitle"
+            value={editingAlumni.currentWork?.title || ""}
+            onChange={(e) => updateEditingAlumni("currentWork.title", e.target.value)}
+          />
+        </div>
+        <div>
+          <Label htmlFor="organization">Organization</Label>
+          <Input
+            id="organization"
+            value={editingAlumni.currentWork?.organization || ""}
+            onChange={(e) => updateEditingAlumni("currentWork.organization", e.target.value)}
+          />
+        </div>
+      </div>
+
+      <div>
+        <Label>Portfolio Links</Label>
+        <div className="space-y-2 mt-2">
+          <Input
+            placeholder="Website URL"
+            value={editingAlumni.portfolioLinks?.website || ""}
+            onChange={(e) => updateEditingAlumni("portfolioLinks.website", e.target.value)}
+          />
+          <Input
+            placeholder="LinkedIn URL"
+            value={editingAlumni.portfolioLinks?.linkedin || ""}
+            onChange={(e) => updateEditingAlumni("portfolioLinks.linkedin", e.target.value)}
+          />
+          <Input
+            placeholder="Instagram Handle"
+            value={editingAlumni.portfolioLinks?.instagram || ""}
+            onChange={(e) => updateEditingAlumni("portfolioLinks.instagram", e.target.value)}
+          />
+          <Input
+            placeholder="YouTube Channel URL"
+            value={editingAlumni.portfolioLinks?.youtube || ""}
+            onChange={(e) => updateEditingAlumni("portfolioLinks.youtube", e.target.value)}
+          />
+        </div>
+      </div>
+
+      <div>
+        <Label>Programs Attended</Label>
+        <div className="space-y-2 mt-2">
+          {editingAlumni.programsAttended.map((program, index) => (
+            <div key={index} className="flex items-center space-x-2 p-2 border rounded-md">
+              <div className="grid grid-cols-3 gap-2 flex-1">
+                <Input
+                  placeholder="Program Name"
+                  value={program.program}
+                  onChange={(e) => {
+                    const newPrograms = [...editingAlumni.programsAttended]
+                    newPrograms[index].program = e.target.value
+                    updateEditingAlumni("programsAttended", newPrograms)
+                  }}
+                />
+                <Input
+                  placeholder="Graduation Year"
+                  type="number"
+                  value={program.graduationYear}
+                  onChange={(e) => {
+                    const newPrograms = [...editingAlumni.programsAttended]
+                    newPrograms[index].graduationYear = Number(e.target.value)
+                    updateEditingAlumni("programsAttended", newPrograms)
+                  }}
+                />
+                <Input
+                  placeholder="Cohort"
+                  value={program.cohort || ""}
+                  onChange={(e) => {
+                    const newPrograms = [...editingAlumni.programsAttended]
+                    newPrograms[index].cohort = e.target.value
+                    updateEditingAlumni("programsAttended", newPrograms)
+                  }}
+                />
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const newPrograms = editingAlumni.programsAttended.filter((_, i) => i !== index)
+                  updateEditingAlumni("programsAttended", newPrograms)
+                }}
+              >
+                <Trash2 className="h-3 w-3" />
+              </Button>
+            </div>
+          ))}
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              const newPrograms = [
+                ...editingAlumni.programsAttended,
+                { program: "", graduationYear: new Date().getFullYear(), cohort: "" },
+              ]
+              updateEditingAlumni("programsAttended", newPrograms)
+            }}
+          >
+            Add Program
+          </Button>
+        </div>
+      </div>
+
+      <ArrayInput
+        label="Languages Spoken"
+        items={editingAlumni.languagesSpoken}
+        setItems={(items) => updateEditingAlumni("languagesSpoken", items)}
+      />
+      <ArrayInput
+        label="Professional Achievements"
+        items={editingAlumni.professionalAchievements}
+        setItems={(items) => updateEditingAlumni("professionalAchievements", items)}
+      />
+      <ArrayInput
+        label="Experiences at Dell'Arte"
+        items={editingAlumni.experiencesAtDellArte}
+        setItems={(items) => updateEditingAlumni("experiencesAtDellArte", items)}
+      />
+      <ArrayInput
+        label="Referrals"
+        items={editingAlumni.referrals}
+        setItems={(items) => updateEditingAlumni("referrals", items)}
+      />
+
+      <div>
+        <Label>Tags</Label>
+        <div className="flex flex-wrap gap-2 mt-2">
+          {allTags.map((tag) => (
+            <Badge
+              key={tag}
+              variant={editingAlumni.tags.includes(tag) ? "default" : "outline"}
+              className="cursor-pointer"
+              onClick={() => {
+                const newTags = editingAlumni.tags.includes(tag)
+                  ? editingAlumni.tags.filter((t) => t !== tag)
+                  : [...editingAlumni.tags, tag]
+                updateEditingAlumni("tags", newTags)
+              }}
+            >
+              {tag}
+            </Badge>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export default function AlumniManagement(): ReactNode {
   const { alumni, loading, error, addAlumni, updateAlumni, deleteAlumni, fetchAlumni } = useAlumniStore()
 
   const [searchQuery, setSearchQuery] = useState("")
@@ -242,6 +563,34 @@ export default function AlumniManagement() {
     setSaveError(null)
 
     try {
+      // Geocode address if it has changed
+      if (
+        showAddModal ||
+        (originalAlumni &&
+          (originalAlumni.address.city !== editingAlumni.address.city ||
+            originalAlumni.address.country !== editingAlumni.address.country))
+      ) {
+        if (editingAlumni.address.city && editingAlumni.address.country) {
+          const response = await fetch("/api/geocode", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              city: editingAlumni.address.city,
+              country: editingAlumni.address.country,
+            }),
+          })
+
+          if (response.ok) {
+            const { latitude, longitude } = await response.json()
+            editingAlumni.address.latitude = latitude
+            editingAlumni.address.longitude = longitude
+          } else {
+            const { error } = await response.json()
+            throw new Error(`Geocoding failed: ${error}`)
+          }
+        }
+      }
+
       console.log("=== SAVE ALUMNI START ===")
       console.log("Editing alumni:", editingAlumni)
       console.log("Original alumni:", originalAlumni)
@@ -256,14 +605,14 @@ export default function AlumniManagement() {
 
         if (Object.keys(changes).length > 0) {
           console.log("Updating alumni with changes:", changes)
-          await updateAlumni(editingAlumni.id, changes)
+          await updateAlumni(editingAlumni)
         } else {
           console.log("No changes detected, skipping update")
         }
       } else {
         // Fallback: send all data if we don't have original
         console.log("No original data, sending all fields")
-        await updateAlumni(editingAlumni.id, editingAlumni)
+        await updateAlumni(editingAlumni)
       }
 
       setShowEditModal(false)
@@ -346,128 +695,6 @@ export default function AlumniManagement() {
       </CardContent>
     </Card>
   )
-
-  const EditForm = () => {
-    if (!editingAlumni) return null
-
-    return (
-      <div className="space-y-4 max-h-[60vh] overflow-y-auto p-1">
-        {saveError && (
-          <div className="flex items-center space-x-2 p-3 bg-red-50 border border-red-200 rounded-md">
-            <AlertCircle className="h-4 w-4 text-red-600" />
-            <p className="text-sm text-red-700">{saveError}</p>
-          </div>
-        )}
-
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <Label htmlFor="firstName">First Name</Label>
-            <Input
-              id="firstName"
-              value={editingAlumni.firstName}
-              onChange={(e) => updateEditingAlumni("firstName", e.target.value)}
-            />
-          </div>
-          <div>
-            <Label htmlFor="lastName">Last Name</Label>
-            <Input
-              id="lastName"
-              value={editingAlumni.lastName}
-              onChange={(e) => updateEditingAlumni("lastName", e.target.value)}
-            />
-          </div>
-        </div>
-
-        <div>
-          <Label htmlFor="email">Email</Label>
-          <Input
-            id="email"
-            type="email"
-            value={editingAlumni.email}
-            onChange={(e) => updateEditingAlumni("email", e.target.value)}
-          />
-        </div>
-
-        <div>
-          <Label htmlFor="phone">Phone</Label>
-          <Input
-            id="phone"
-            value={editingAlumni.phone || ""}
-            onChange={(e) => updateEditingAlumni("phone", e.target.value)}
-          />
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <Label htmlFor="city">City</Label>
-            <Input
-              id="city"
-              value={editingAlumni.address.city}
-              onChange={(e) => updateEditingAlumni("address.city", e.target.value)}
-            />
-          </div>
-          <div>
-            <Label htmlFor="country">Country</Label>
-            <Input
-              id="country"
-              value={editingAlumni.address.country}
-              onChange={(e) => updateEditingAlumni("address.country", e.target.value)}
-            />
-          </div>
-        </div>
-
-        <div>
-          <Label htmlFor="biography">Biography</Label>
-          <Textarea
-            id="biography"
-            value={editingAlumni.biography || ""}
-            onChange={(e) => updateEditingAlumni("biography", e.target.value)}
-            rows={3}
-          />
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <Label htmlFor="jobTitle">Job Title</Label>
-            <Input
-              id="jobTitle"
-              value={editingAlumni.currentWork?.title || ""}
-              onChange={(e) => updateEditingAlumni("currentWork.title", e.target.value)}
-            />
-          </div>
-          <div>
-            <Label htmlFor="organization">Organization</Label>
-            <Input
-              id="organization"
-              value={editingAlumni.currentWork?.organization || ""}
-              onChange={(e) => updateEditingAlumni("currentWork.organization", e.target.value)}
-            />
-          </div>
-        </div>
-
-        <div>
-          <Label>Tags</Label>
-          <div className="flex flex-wrap gap-2 mt-2">
-            {allTags.map((tag) => (
-              <Badge
-                key={tag}
-                variant={editingAlumni.tags.includes(tag) ? "default" : "outline"}
-                className="cursor-pointer"
-                onClick={() => {
-                  const newTags = editingAlumni.tags.includes(tag)
-                    ? editingAlumni.tags.filter((t) => t !== tag)
-                    : [...editingAlumni.tags, tag]
-                  updateEditingAlumni("tags", newTags)
-                }}
-              >
-                {tag}
-              </Badge>
-            ))}
-          </div>
-        </div>
-      </div>
-    )
-  }
 
   if (error) {
     return (
@@ -793,7 +1020,11 @@ export default function AlumniManagement() {
             <DialogTitle>Edit Alumni Profile</DialogTitle>
             <DialogDescription>Update the alumni information below.</DialogDescription>
           </DialogHeader>
-          <EditForm />
+          <EditForm
+            editingAlumni={editingAlumni}
+            updateEditingAlumni={updateEditingAlumni}
+            saveError={saveError}
+          />
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowEditModal(false)} disabled={isSubmitting}>
               Cancel
@@ -813,7 +1044,11 @@ export default function AlumniManagement() {
             <DialogTitle>Add New Alumni</DialogTitle>
             <DialogDescription>Create a new alumni profile.</DialogDescription>
           </DialogHeader>
-          <EditForm />
+          <EditForm
+            editingAlumni={editingAlumni}
+            updateEditingAlumni={updateEditingAlumni}
+            saveError={saveError}
+          />
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowAddModal(false)} disabled={isSubmitting}>
               Cancel
@@ -827,25 +1062,23 @@ export default function AlumniManagement() {
       </Dialog>
 
       {/* Delete Confirmation Dialog */}
-      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Delete Alumni Profile</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to delete {selectedAlumni?.firstName} {selectedAlumni?.lastName}'s profile? This
-              action cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowDeleteDialog(false)} disabled={isSubmitting}>
-              Cancel
-            </Button>
-            <Button variant="destructive" onClick={confirmDelete} disabled={isSubmitting}>
-              {isSubmitting ? "Deleting..." : "Delete Profile"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the profile for {selectedAlumni?.firstName}{" "}
+              {selectedAlumni?.lastName}.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setSelectedAlumni(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} disabled={isSubmitting}>
+              {isSubmitting ? "Deleting..." : "Continue"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
