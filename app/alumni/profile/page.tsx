@@ -109,12 +109,12 @@ export default function AlumniProfile() {
               programs: data.programsAttended || [],
               graduationYears: data.graduationYears || [],
               biography: data.biography || "",
-              websiteUrl: data.websiteUrl || "",
-              professionalTags: data.professionalTags || [],
-              dellArteRoles: data.dellArteRoles || [],
-              profileVisibility: data.profileVisibility || "public",
+              websiteUrl: data.portfolioLinks?.website || "",
+              professionalTags: data.tags || [],
+              dellArteRoles: data.experiencesAtDellArte || [],
+              profileVisibility: data.profilePrivacy || "public",
               // Remap fields from the database to the form structure
-              currentRole: data.currentWork?.role || "",
+              currentRole: data.currentWork?.title || "",
               currentOrganization: data.currentWork?.organization || "",
             })
           }

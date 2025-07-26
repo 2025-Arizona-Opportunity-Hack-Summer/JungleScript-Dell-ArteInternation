@@ -44,7 +44,6 @@ import {
   AlertCircle,
   X,
 } from "lucide-react"
-import Header from "@/components/layout/header"
 import { useAlumniStore, type AlumniProfile } from "@/lib/alumni-store"
 import type { ReactElement } from "react"
 import type { NextPage } from "next"
@@ -699,7 +698,6 @@ export default function AlumniManagement(): ReactNode {
   if (error) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <Header />
         <main className="flex flex-col items-center justify-center py-20">
           <p className="text-lg font-semibold text-red-600">Error: {error}</p>
           <Button onClick={() => fetchAlumni()} className="mt-4">
@@ -712,11 +710,8 @@ export default function AlumniManagement(): ReactNode {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header />
-
       <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
         <div className="px-4 py-6 sm:px-0">
-          {/* Header */}
           <div className="flex justify-between items-center mb-8">
             <div>
               <h1 className="text-3xl font-bold text-gray-900">Alumni Management</h1>

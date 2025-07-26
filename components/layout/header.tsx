@@ -71,6 +71,7 @@ export default function Header() {
     { href: "/admin/alumni", label: "Alumni", icon: Users },
     { href: "/admin/communications", label: "Communications", icon: Mail },
     { href: "/admin/import", label: "Import", icon: Upload },
+    { href: "/map", label: "Map", icon: Map },
   ]
 
   const alumniNavItems = [

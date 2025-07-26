@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Upload, FileText, CheckCircle, XCircle, AlertCircle, Download } from "lucide-react"
-import Header from "@/components/layout/header"
+
 import { supabase } from "@/lib/supabase"
 import { useAlumniStore } from "@/lib/alumni-store"
 
@@ -193,8 +193,6 @@ export default function DataImport() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header />
-
       <main className="max-w-4xl mx-auto py-6 sm:px-6 lg:px-8">
         <div className="px-4 py-6 sm:px-0">
           {/* Header */}

@@ -12,9 +12,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Phone, Mail, Globe, Linkedin, Instagram, Youtube } from "lucide-react"
 import { useAlumniStore, type AlumniProfile } from "@/lib/alumni-store"
 import { format } from "date-fns"
+import { useRouter } from "next/navigation"
 
 export default function AlumniMap() {
   const { user } = useUser()
+  const router = useRouter()
   const { alumni, loading, error, fetchAlumni } = useAlumniStore()
 
   const mapContainer = useRef<HTMLDivElement>(null)

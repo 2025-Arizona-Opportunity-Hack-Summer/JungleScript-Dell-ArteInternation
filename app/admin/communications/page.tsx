@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Mail, Users, Send, TestTube } from "lucide-react"
-import Header from "@/components/layout/header"
+
 import { useAlumniStore } from "@/lib/alumni-store"
 
 const programs = [
@@ -101,8 +101,6 @@ export default function Communications() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header />
-
       <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
         <div className="px-4 py-6 sm:px-0">
           {/* Header */}

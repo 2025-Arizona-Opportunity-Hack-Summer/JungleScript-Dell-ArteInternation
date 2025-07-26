@@ -80,9 +80,7 @@ export async function POST(req: Request) {
     }
     // --- End Geocoding Step ---
 
-    // Check if an alumni record with this email already exists
-    const { data: existingAlumni } = await supabaseAdmin.from("alumni").select("id").eq("email", email).single()
-
+    // Map frontend data to the database schema
     const profileData = {
       clerkUserId: userId,
       firstName: firstName || user.firstName,
@@ -90,18 +88,23 @@ export async function POST(req: Request) {
       email: email,
       phone: phone,
       address: { ...address, ...coordinates },
-      programsAttended: programs,
-      graduationYears,
-      biography,
-      websiteUrl,
-      professionalTags,
-      dellArteRoles,
-      profileVisibility,
+      programsAttended: programs, // maps `programs` to `programsAttended`
+      biography: biography,
       currentWork: {
-        role: currentRole,
+        title: currentRole,
         organization: currentOrganization,
       },
+      tags: professionalTags, // maps `professionalTags` to `tags`
+      portfolioLinks: {
+        website: websiteUrl,
+      },
+      experiencesAtDellArte: dellArteRoles, // maps `dellArteRoles` to `experiencesAtDellArte`
+      profilePrivacy: profileVisibility, // maps `profileVisibility` to `profilePrivacy`
+      lastUpdated: new Date().toISOString(),
     }
+
+    // Check if an alumni record with this email already exists
+    const { data: existingAlumni } = await supabaseAdmin.from("alumni").select("id").eq("email", email).single()
 
     if (existingAlumni) {
       // Email exists: Link the new Clerk ID and update the profile data.

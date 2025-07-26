@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Users, UserPlus, Mail, Upload, TrendingUp } from "lucide-react"
-import Header from "@/components/layout/header"
+
 import Link from "next/link"
 import { useAlumniStore } from "@/lib/alumni-store"
 
@@ -100,8 +100,6 @@ export default function AdminDashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header />
-
       <main className="h-[calc(100vh-64px)] flex flex-col">
         <div className="flex-1 max-w-7xl mx-auto w-full py-8 px-4 sm:px-6 lg:px-8">
           {/* Header */}
