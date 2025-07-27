@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle, SheetDescription, SheetClose } from "@/components/ui/sheet"
 import { usePathname } from "next/navigation"
 import { UserButton, useUser, UserProfile } from "@clerk/nextjs"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -114,57 +114,91 @@ export default function Header() {
                 <Menu className="h-6 w-6" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="left">
+            <SheetContent side="top">
+              <SheetHeader>
+                <SheetTitle>Navigation</SheetTitle>
+                <SheetDescription>
+                  Navigate through the application.
+                </SheetDescription>
+              </SheetHeader>
               <div className="flex flex-col space-y-4 p-4">
-                {isAdmin &&
-                  adminNavItems.map((item) => (
-                    <Link key={item.label} href={item.href}>
+                {navItems.map((item) => (
+                  <SheetClose asChild key={item.label}>
+                    <Link href={item.href}>
                       <Button variant="ghost" className="w-full justify-start space-x-2">
                         <item.icon className="h-5 w-5" />
                         <span>{item.label}</span>
                       </Button>
                     </Link>
-                  ))}
+                  </SheetClose>
+                ))}
+                <hr className="my-2" />
+                <SheetClose asChild>
+                  <Link href="/alumni/profile">
+                    <Button variant="ghost" className="w-full justify-start space-x-2">
+                      <UserCircle className="mr-2 h-4 w-4" />
+                      <span>My Profile</span>
+                    </Button>
+                  </Link>
+                </SheetClose>
+                <SheetClose asChild>
+                  <Link href="/account">
+                    <Button variant="ghost" className="w-full justify-start space-x-2">
+                      <Settings className="mr-2 h-4 w-4" />
+                      <span>Account Settings</span>
+                    </Button>
+                  </Link>
+                </SheetClose>
+                <hr className="my-2" />
+                <SignOutButton>
+                  <SheetClose asChild>
+                    <Button variant="ghost" className="w-full justify-start">
+                      <span>Sign out</span>
+                    </Button>
+                  </SheetClose>
+                </SignOutButton>
               </div>
             </SheetContent>
           </Sheet>
         </div>
 
         {/* User Dropdown */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-              <UserCircle className="h-8 w-8" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent className="w-56" align="end" forceMount>
-            <DropdownMenuLabel className="font-normal">
-              <div className="flex flex-col space-y-1">
-                <p className="text-sm font-medium leading-none">{user.fullName}</p>
-                <p className="text-xs leading-none text-muted-foreground">{user.primaryEmailAddress?.toString()}</p>
-              </div>
-            </DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem asChild>
-              <Link href="/alumni/profile">
-                <UserCircle className="mr-2 h-4 w-4" />
-                <span>My Profile</span>
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem asChild>
-              <Link href="/account">
-                <Settings className="mr-2 h-4 w-4" />
-                <span>Account Settings</span>
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <SignOutButton>
-              <DropdownMenuItem>
-                <span>Sign out</span>
+        <div className="hidden md:block">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                <UserCircle className="h-8 w-8" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-56" align="end" forceMount>
+              <DropdownMenuLabel className="font-normal">
+                <div className="flex flex-col space-y-1">
+                  <p className="text-sm font-medium leading-none">{user.fullName}</p>
+                  <p className="text-xs leading-none text-muted-foreground">{user.primaryEmailAddress?.toString()}</p>
+                </div>
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem asChild>
+                <Link href="/alumni/profile">
+                  <UserCircle className="mr-2 h-4 w-4" />
+                  <span>My Profile</span>
+                </Link>
               </DropdownMenuItem>
-            </SignOutButton>
-          </DropdownMenuContent>
-        </DropdownMenu>
+              <DropdownMenuItem asChild>
+                <Link href="/account">
+                  <Settings className="mr-2 h-4 w-4" />
+                  <span>Account Settings</span>
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <SignOutButton>
+                <DropdownMenuItem>
+                  <span>Sign out</span>
+                </DropdownMenuItem>
+              </SignOutButton>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
     </header>
   )

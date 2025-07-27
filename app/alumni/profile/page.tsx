@@ -12,6 +12,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { LucideUser, Briefcase, Save, Eye } from "lucide-react"
+import AddressAutofill from "@/components/ui/address-autofill"
 
 interface ProfileData {
   firstName: string
@@ -138,7 +139,7 @@ export default function AlumniProfile() {
     fetchProfile()
   }, [user])
 
-  const handleInputChange = (field: string, value: string) => {
+  const handleInputChange = (field: string, value: string | object) => {
     if (field.includes(".")) {
       const [parent, child] = field.split(".")
       setProfileData((prev) => ({
@@ -148,7 +149,10 @@ export default function AlumniProfile() {
           [child]: value,
         },
       }))
-    } else {
+    } else if (field === 'address' && typeof value === 'object') {
+      setProfileData((prev) => ({...prev, address: value as any}))
+    }
+    else {
       setProfileData((prev) => ({ ...prev, [field]: value }))
     }
   }
@@ -223,16 +227,16 @@ export default function AlumniProfile() {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center space-x-4">
-                  <Avatar className="h-16 w-16">
+                  <Avatar className="h-16 w-16 flex-shrink-0">
                     <AvatarFallback className="bg-red-100 text-red-700 text-xl">
                       {getInitials(profileData.firstName || "U", profileData.lastName || "U")}
                     </AvatarFallback>
                   </Avatar>
-                  <div>
-                    <h2 className="text-2xl font-bold">
+                  <div className="min-w-0">
+                    <h2 className="text-xl sm:text-2xl font-bold truncate">
                       {profileData.firstName} {profileData.lastName}
                     </h2>
-                    <p className="text-gray-600">{profileData.email}</p>
+                    <p className="text-sm sm:text-base text-gray-600 break-words">{profileData.email}</p>
                   </div>
                 </CardTitle>
               </CardHeader>
@@ -288,33 +292,11 @@ export default function AlumniProfile() {
                   </div>
                 </div>
 
-                <div className="space-y-4">
-                  <Label>Address</Label>
-                  <div className="grid grid-cols-1 gap-4">
-                    <Input
-                      placeholder="Street Address"
-                      value={profileData.address.street}
-                      onChange={(e) => handleInputChange("address.street", e.target.value)}
-                    />
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <Input
-                        placeholder="City"
-                        value={profileData.address.city}
-                        onChange={(e) => handleInputChange("address.city", e.target.value)}
-                      />
-                      <Input
-                        placeholder="State/Province"
-                        value={profileData.address.state}
-                        onChange={(e) => handleInputChange("address.state", e.target.value)}
-                      />
-                      <Input
-                        placeholder="Country"
-                        value={profileData.address.country}
-                        onChange={(e) => handleInputChange("address.country", e.target.value)}
-                      />
-                    </div>
-                  </div>
-                </div>
+                <AddressAutofill
+                  value={profileData.address}
+                  onChange={(address) => handleInputChange("address", address)}
+                  apiKey={process.env.NEXT_PUBLIC_MAPBOX_API || ""}
+                />
               </CardContent>
             </Card>
 

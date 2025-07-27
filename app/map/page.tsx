@@ -574,35 +574,51 @@ export default function AlumniMap() {
                             </div>
 
                             <div className="space-y-2 text-sm">
-                              <div>
-                                <h3 className="font-semibold text-gray-800 mb-1">Current Work</h3>
-                                <p className="text-gray-600">{selectedAlumni.currentWork?.title || "Not specified"}</p>
-                                <p className="text-xs text-gray-500">
-                                  {selectedAlumni.currentWork?.organization || "Not specified"}
-                                </p>
-                              </div>
-
-                              <div>
-                                <h3 className="font-semibold text-gray-800 mb-1">Program</h3>
-                                <p className="text-gray-600">{selectedAlumni.programsAttended[0]?.program}</p>
-                                <p className="text-xs text-gray-500">{selectedAlumni.programsAttended[0]?.cohort}</p>
-                              </div>
-
-                              <div>
-                                <h3 className="font-semibold text-gray-800 mb-1">About</h3>
-                                <div
-                                  className={`text-gray-600 text-xs leading-relaxed custom-scroll ${
-                                    isBioExpanded ? "max-h-24 overflow-y-auto" : "line-clamp-2"
-                                  }`}
-                                >
-                                  {selectedAlumni.biography}
+                              {selectedAlumni?.currentWork?.title && (
+                                <div>
+                                  <h3 className="font-semibold text-gray-800 mb-1">Current Work</h3>
+                                  <p className="text-gray-600">{selectedAlumni.currentWork.title}</p>
+                                  {selectedAlumni.currentWork.organization && (
+                                    <p className="text-xs text-gray-500">{selectedAlumni.currentWork.organization}</p>
+                                  )}
                                 </div>
-                                <Button variant="link" size="sm" className="p-0 h-auto" onClick={() => setIsBioExpanded(!isBioExpanded)}>
-                                  {isBioExpanded ? "Read less" : "Read more"}
-                                </Button>
-                              </div>
+                              )}
 
-                              <div className="flex space-x-2 pt-2">
+                              {selectedAlumni?.programsAttended?.[0]?.program && (
+                                <div>
+                                  <h3 className="font-semibold text-gray-800 mb-1">Program</h3>
+                                  <p className="text-gray-600">{selectedAlumni.programsAttended[0].program}</p>
+                                  {selectedAlumni.programsAttended[0].cohort && (
+                                    <p className="text-xs text-gray-500">{selectedAlumni.programsAttended[0].cohort}</p>
+                                  )}
+                                </div>
+                              )}
+
+                              {selectedAlumni?.biography && (
+                                <div>
+                                  <h3 className="font-semibold text-gray-800 mb-1">About</h3>
+                                  <div
+                                    className={`text-gray-600 text-xs leading-relaxed custom-scroll ${
+                                      isBioExpanded ? "max-h-24 overflow-y-auto" : "line-clamp-2"
+                                    }`}
+                                  >
+                                    {selectedAlumni.biography}
+                                  </div>
+                                  {selectedAlumni.biography.length > 100 && (
+                                    <Button
+                                      variant="link"
+                                      size="sm"
+                                      className="p-0 h-auto"
+                                      onClick={() => setIsBioExpanded(!isBioExpanded)}
+                                    >
+                                      {isBioExpanded ? "Read less" : "Read more"}
+                                    </Button>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+
+                            <div className="flex space-x-2 pt-2">
                                 <Button size="sm" className="flex-1" onClick={() => handleContactClick(selectedAlumni)}>
                                   <Mail className="h-4 w-4 mr-2" />
                                   Contact
@@ -620,7 +636,6 @@ export default function AlumniMap() {
                                   </Button>
                                 )}
                               </div>
-                            </div>
                           </div>
                         )
                       )}
@@ -730,38 +745,50 @@ export default function AlumniMap() {
                         </div>
 
                         <div className="space-y-3 text-sm">
-                          <div>
-                            <h3 className="font-semibold text-gray-800 mb-1">Current Work</h3>
-                            <p className="text-gray-600">{selectedAlumni.currentWork?.title || "Not specified"}</p>
-                            <p className="text-xs text-gray-500">
-                              {selectedAlumni.currentWork?.organization || "Not specified"}
-                            </p>
-                          </div>
-
-                          <div>
-                            <h3 className="font-semibold text-gray-800 mb-1">Program</h3>
-                            <p className="text-gray-600">{selectedAlumni.programsAttended[0]?.program}</p>
-                            <p className="text-xs text-gray-500">{selectedAlumni.programsAttended[0]?.cohort}</p>
-                          </div>
-
-                          <div>
-                            <h3 className="font-semibold text-gray-800 mb-1">About</h3>
-                            <div className={`space-y-2 ${isBioExpanded ? "max-h-36 overflow-y-auto" : ""}`}>
-                              <div
-                                className={`text-gray-600 text-xs leading-relaxed ${!isBioExpanded ? "line-clamp-4" : ""}`}
-                              >
-                                {selectedAlumni.biography}
-                              </div>
+                          {selectedAlumni?.currentWork?.title && (
+                            <div>
+                              <h3 className="font-semibold text-gray-800 mb-1">Current Work</h3>
+                              <p className="text-gray-600">{selectedAlumni.currentWork.title}</p>
+                              {selectedAlumni.currentWork.organization && (
+                                <p className="text-xs text-gray-500">{selectedAlumni.currentWork.organization}</p>
+                              )}
                             </div>
-                            <Button
-                              variant="link"
-                              size="sm"
-                              className="p-0 h-auto mt-1"
-                              onClick={() => setIsBioExpanded(!isBioExpanded)}
-                            >
-                              {isBioExpanded ? "Read less" : "Read more"}
-                            </Button>
-                          </div>
+                          )}
+
+                          {selectedAlumni?.programsAttended?.[0]?.program && (
+                            <div>
+                              <h3 className="font-semibold text-gray-800 mb-1">Program</h3>
+                              <p className="text-gray-600">{selectedAlumni.programsAttended[0].program}</p>
+                              {selectedAlumni.programsAttended[0].cohort && (
+                                <p className="text-xs text-gray-500">{selectedAlumni.programsAttended[0].cohort}</p>
+                              )}
+                            </div>
+                          )}
+
+                          {selectedAlumni?.biography && (
+                            <div>
+                              <h3 className="font-semibold text-gray-800 mb-1">About</h3>
+                              <div className={`space-y-2 ${isBioExpanded ? "max-h-36 overflow-y-auto" : ""}`}>
+                                <div
+                                  className={`text-gray-600 text-xs leading-relaxed ${
+                                    !isBioExpanded ? "line-clamp-4" : ""
+                                  }`}
+                                >
+                                  {selectedAlumni.biography}
+                                </div>
+                              </div>
+                              {selectedAlumni.biography.length > 200 && (
+                                <Button
+                                  variant="link"
+                                  size="sm"
+                                  className="p-0 h-auto mt-1"
+                                  onClick={() => setIsBioExpanded(!isBioExpanded)}
+                                >
+                                  {isBioExpanded ? "Read less" : "Read more"}
+                                </Button>
+                              )}
+                            </div>
+                          )}
 
                           <div className="flex space-x-3 pt-4">
                             <Button className="flex-1" onClick={() => handleContactClick(selectedAlumni)}>

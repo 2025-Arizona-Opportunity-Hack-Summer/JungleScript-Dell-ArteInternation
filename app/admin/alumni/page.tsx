@@ -712,12 +712,12 @@ export default function AlumniManagement(): ReactNode {
     <div className="min-h-screen bg-gray-50">
       <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
         <div className="px-4 py-6 sm:px-0">
-          <div className="flex justify-between items-center mb-8">
+          <div className="flex flex-col sm:flex-row justify-between sm:items-center mb-8 gap-4">
             <div>
               <h1 className="text-3xl font-bold text-gray-900">Alumni Management</h1>
               <p className="mt-2 text-gray-600">Manage alumni profiles and information</p>
             </div>
-            <Button className="bg-red-600 hover:bg-red-700" onClick={handleAdd}>
+            <Button className="bg-red-600 hover:bg-red-700 w-full sm:w-auto" onClick={handleAdd}>
               <UserPlus className="h-4 w-4 mr-2" />
               Add New Alumni
             </Button>

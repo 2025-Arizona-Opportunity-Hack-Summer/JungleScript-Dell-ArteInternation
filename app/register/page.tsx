@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Save } from "lucide-react"
+import AddressAutofill from "@/components/ui/address-autofill"
 
 const programs = [
   "MFA in Ensemble-Based Physical Theatre",
@@ -50,7 +51,7 @@ export default function RegisterPage() {
     }
   }, [user])
 
-  const handleInputChange = (field: string, value: string) => {
+  const handleInputChange = (field: string, value: string | object) => {
     if (field.includes(".")) {
       const [parent, child] = field.split(".")
       setFormData((prev) => ({
@@ -60,7 +61,10 @@ export default function RegisterPage() {
           [child]: value,
         },
       }))
-    } else {
+    } else if (field === 'address' && typeof value === 'object') {
+      setFormData((prev) => ({ ...prev, address: value as any}))
+    }
+    else {
       setFormData((prev) => ({ ...prev, [field]: value }))
     }
   }
@@ -142,33 +146,11 @@ export default function RegisterPage() {
                 />
               </div>
 
-              <div className="space-y-4">
-                <Label>Address</Label>
-                <div className="grid grid-cols-1 gap-4">
-                  <Input
-                    placeholder="Street Address"
-                    value={formData.address.street}
-                    onChange={(e) => handleInputChange("address.street", e.target.value)}
-                  />
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <Input
-                      placeholder="City"
-                      value={formData.address.city}
-                      onChange={(e) => handleInputChange("address.city", e.target.value)}
-                    />
-                    <Input
-                      placeholder="State/Province"
-                      value={formData.address.state}
-                      onChange={(e) => handleInputChange("address.state", e.target.value)}
-                    />
-                    <Input
-                      placeholder="Country"
-                      value={formData.address.country}
-                      onChange={(e) => handleInputChange("address.country", e.target.value)}
-                    />
-                  </div>
-                </div>
-              </div>
+              <AddressAutofill
+                value={formData.address}
+                onChange={(address) => handleInputChange("address", address)}
+                apiKey={process.env.NEXT_PUBLIC_MAPBOX_API || ""}
+              />
             </div>
 
             {/* Academic Information */}
