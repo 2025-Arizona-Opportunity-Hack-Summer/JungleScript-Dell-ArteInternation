@@ -23,7 +23,7 @@ export default function HomePage() {
 
   if (!isLoaded) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex-1 flex items-center justify-center">
         <div>Loading...</div>
       </div>
     )
@@ -31,7 +31,7 @@ export default function HomePage() {
 
   if (!user) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 text-center p-4">
+      <div className="flex-1 flex flex-col items-center justify-center bg-gray-50 text-center p-4">
         <h1 className="text-4xl font-bold mb-4">Welcome to the Dell'Arte Alumni Network</h1>
         <p className="text-lg text-gray-700 mb-8">
           Connect with fellow alumni, discover opportunities, and stay in touch with the Dell'Arte community.
@@ -49,7 +49,7 @@ export default function HomePage() {
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen">
+    <div className="flex-1 flex items-center justify-center">
       <div>Loading...</div>
     </div>
   )

@@ -202,291 +202,289 @@ export default function AlumniProfile() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <main className="max-w-4xl mx-auto py-6 sm:px-6 lg:px-8">
-        <div className="px-4 py-6 sm:px-0">
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900">Edit Profile</h1>
-            <p className="mt-2 text-gray-600">Update your information to stay connected with the Dell'Arte community</p>
-          </div>
+    <div className="flex-1 flex flex-col items-center p-6 bg-gray-50 overflow-y-auto">
+      <div className="w-full max-w-4xl">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900">Edit Profile</h1>
+          <p className="mt-2 text-gray-600">Update your information to stay connected with the Dell'Arte community</p>
+        </div>
 
-          {saved && (
-            <Alert className="mb-6 border-green-200 bg-green-50">
-              <AlertDescription className="text-green-800">Profile updated successfully!</AlertDescription>
-            </Alert>
-          )}
+        {saved && (
+          <Alert className="mb-6 border-green-200 bg-green-50">
+            <AlertDescription className="text-green-800">Profile updated successfully!</AlertDescription>
+          </Alert>
+        )}
 
-          {error && (
-            <Alert variant="destructive" className="mb-6">
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
+        {error && (
+          <Alert variant="destructive" className="mb-6">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
 
-          <div className="space-y-8">
-            {/* Profile Header */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-4">
-                  <Avatar className="h-16 w-16 flex-shrink-0">
-                    <AvatarFallback className="bg-red-100 text-red-700 text-xl">
-                      {getInitials(profileData.firstName || "U", profileData.lastName || "U")}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="min-w-0">
-                    <h2 className="text-xl sm:text-2xl font-bold truncate">
-                      {profileData.firstName} {profileData.lastName}
-                    </h2>
-                    <p className="text-sm sm:text-base text-gray-600 break-words">{profileData.email}</p>
-                  </div>
-                </CardTitle>
-              </CardHeader>
-            </Card>
-
-            {/* Basic Information */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <LucideUser className="h-5 w-5 mr-2" />
-                  Basic Information
-                </CardTitle>
-                <CardDescription>Your personal details and contact information</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="firstName">First Name</Label>
-                    <Input
-                      id="firstName"
-                      value={profileData.firstName}
-                      onChange={(e) => handleInputChange("firstName", e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="lastName">Last Name</Label>
-                    <Input
-                      id="lastName"
-                      value={profileData.lastName}
-                      onChange={(e) => handleInputChange("lastName", e.target.value)}
-                    />
-                  </div>
+        <div className="space-y-8">
+          {/* Profile Header */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-4">
+                <Avatar className="h-16 w-16 flex-shrink-0">
+                  <AvatarFallback className="bg-red-100 text-red-700 text-xl">
+                    {getInitials(profileData.firstName || "U", profileData.lastName || "U")}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="min-w-0">
+                  <h2 className="text-xl sm:text-2xl font-bold truncate">
+                    {profileData.firstName} {profileData.lastName}
+                  </h2>
+                  <p className="text-sm sm:text-base text-gray-600 break-words">{profileData.email}</p>
                 </div>
+              </CardTitle>
+            </CardHeader>
+          </Card>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      value={profileData.email}
-                      onChange={(e) => handleInputChange("email", e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="phone">Phone</Label>
-                    <Input
-                      id="phone"
-                      value={profileData.phone}
-                      onChange={(e) => handleInputChange("phone", e.target.value)}
-                      placeholder="(555) 123-4567"
-                    />
-                  </div>
+          {/* Basic Information */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <LucideUser className="h-5 w-5 mr-2" />
+                Basic Information
+              </CardTitle>
+              <CardDescription>Your personal details and contact information</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="firstName">First Name</Label>
+                  <Input
+                    id="firstName"
+                    value={profileData.firstName}
+                    onChange={(e) => handleInputChange("firstName", e.target.value)}
+                  />
                 </div>
+                <div className="space-y-2">
+                  <Label htmlFor="lastName">Last Name</Label>
+                  <Input
+                    id="lastName"
+                    value={profileData.lastName}
+                    onChange={(e) => handleInputChange("lastName", e.target.value)}
+                  />
+                </div>
+              </div>
 
-                <AddressAutofill
-                  value={profileData.address}
-                  onChange={(address) => handleInputChange("address", address)}
-                  apiKey={process.env.NEXT_PUBLIC_MAPBOX_API || ""}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={profileData.email}
+                    onChange={(e) => handleInputChange("email", e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="phone">Phone</Label>
+                  <Input
+                    id="phone"
+                    value={profileData.phone}
+                    onChange={(e) => handleInputChange("phone", e.target.value)}
+                    placeholder="(555) 123-4567"
+                  />
+                </div>
+              </div>
+
+              <AddressAutofill
+                value={profileData.address}
+                onChange={(address) => handleInputChange("address", address)}
+                apiKey={process.env.NEXT_PUBLIC_MAPBOX_API || ""}
+              />
+            </CardContent>
+          </Card>
+
+          {/* Academic Information */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Academic Background</CardTitle>
+              <CardDescription>Your Dell'Arte education and programs</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="space-y-4">
+                <Label>Programs Attended</Label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {programs.map((program) => (
+                    <div key={program} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={program}
+                        checked={profileData.programs.includes(program)}
+                        onCheckedChange={(checked) => handleArrayChange("programs", program, checked as boolean)}
+                      />
+                      <Label htmlFor={program} className="text-sm">
+                        {program}
+                      </Label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="graduationYears">Graduation Years</Label>
+                <Input
+                  id="graduationYears"
+                  placeholder="e.g., 2020, 2022"
+                  value={profileData.graduationYears.join(", ")}
+                  onChange={(e) =>
+                    setProfileData((prev) => ({
+                      ...prev,
+                      graduationYears: e.target.value
+                        .split(",")
+                        .map((year) => year.trim())
+                        .filter(Boolean),
+                    }))
+                  }
                 />
-              </CardContent>
-            </Card>
+              </div>
+            </CardContent>
+          </Card>
 
-            {/* Academic Information */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Academic Background</CardTitle>
-                <CardDescription>Your Dell'Arte education and programs</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="space-y-4">
-                  <Label>Programs Attended</Label>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {programs.map((program) => (
-                      <div key={program} className="flex items-center space-x-2">
-                        <Checkbox
-                          id={program}
-                          checked={profileData.programs.includes(program)}
-                          onCheckedChange={(checked) => handleArrayChange("programs", program, checked as boolean)}
-                        />
-                        <Label htmlFor={program} className="text-sm">
-                          {program}
-                        </Label>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+          {/* Professional Information */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Briefcase className="h-5 w-5 mr-2" />
+                Professional Information
+              </CardTitle>
+              <CardDescription>Your current work and professional focus</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="space-y-2">
+                <Label htmlFor="biography">Biography</Label>
+                <Textarea
+                  id="biography"
+                  placeholder="Tell us about yourself, your work, and your journey since Dell'Arte..."
+                  value={profileData.biography}
+                  onChange={(e) => handleInputChange("biography", e.target.value)}
+                  rows={4}
+                />
+              </div>
 
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label htmlFor="graduationYears">Graduation Years</Label>
+                  <Label htmlFor="currentRole">Current Role</Label>
                   <Input
-                    id="graduationYears"
-                    placeholder="e.g., 2020, 2022"
-                    value={profileData.graduationYears.join(", ")}
-                    onChange={(e) =>
-                      setProfileData((prev) => ({
-                        ...prev,
-                        graduationYears: e.target.value
-                          .split(",")
-                          .map((year) => year.trim())
-                          .filter(Boolean),
-                      }))
-                    }
+                    id="currentRole"
+                    placeholder="e.g., Theatre Director"
+                    value={profileData.currentRole}
+                    onChange={(e) => handleInputChange("currentRole", e.target.value)}
                   />
                 </div>
-              </CardContent>
-            </Card>
-
-            {/* Professional Information */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <Briefcase className="h-5 w-5 mr-2" />
-                  Professional Information
-                </CardTitle>
-                <CardDescription>Your current work and professional focus</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
                 <div className="space-y-2">
-                  <Label htmlFor="biography">Biography</Label>
-                  <Textarea
-                    id="biography"
-                    placeholder="Tell us about yourself, your work, and your journey since Dell'Arte..."
-                    value={profileData.biography}
-                    onChange={(e) => handleInputChange("biography", e.target.value)}
-                    rows={4}
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="currentRole">Current Role</Label>
-                    <Input
-                      id="currentRole"
-                      placeholder="e.g., Theatre Director"
-                      value={profileData.currentRole}
-                      onChange={(e) => handleInputChange("currentRole", e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="currentOrganization">Current Organization</Label>
-                    <Input
-                      id="currentOrganization"
-                      placeholder="e.g., Portland Theatre Collective"
-                      value={profileData.currentOrganization}
-                      onChange={(e) => handleInputChange("currentOrganization", e.target.value)}
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="websiteUrl">Website URL</Label>
+                  <Label htmlFor="currentOrganization">Current Organization</Label>
                   <Input
-                    id="websiteUrl"
-                    placeholder="https://yourwebsite.com"
-                    value={profileData.websiteUrl}
-                    onChange={(e) => handleInputChange("websiteUrl", e.target.value)}
+                    id="currentOrganization"
+                    placeholder="e.g., Portland Theatre Collective"
+                    value={profileData.currentOrganization}
+                    onChange={(e) => handleInputChange("currentOrganization", e.target.value)}
                   />
                 </div>
+              </div>
 
-                <div className="space-y-4">
-                  <Label>Professional Focus Areas</Label>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                    {professionalTags.map((tag) => (
-                      <div key={tag} className="flex items-center space-x-2">
-                        <Checkbox
-                          id={tag}
-                          checked={profileData.professionalTags.includes(tag)}
-                          onCheckedChange={(checked) =>
-                            handleArrayChange("professionalTags", tag, checked as boolean)
-                          }
-                        />
-                        <Label htmlFor={tag} className="text-sm">
-                          {tag}
-                        </Label>
-                      </div>
-                    ))}
-                  </div>
+              <div className="space-y-2">
+                <Label htmlFor="websiteUrl">Website URL</Label>
+                <Input
+                  id="websiteUrl"
+                  placeholder="https://yourwebsite.com"
+                  value={profileData.websiteUrl}
+                  onChange={(e) => handleInputChange("websiteUrl", e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-4">
+                <Label>Professional Focus Areas</Label>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  {professionalTags.map((tag) => (
+                    <div key={tag} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={tag}
+                        checked={profileData.professionalTags.includes(tag)}
+                        onCheckedChange={(checked) =>
+                          handleArrayChange("professionalTags", tag, checked as boolean)
+                        }
+                      />
+                      <Label htmlFor={tag} className="text-sm">
+                        {tag}
+                      </Label>
+                    </div>
+                  ))}
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </CardContent>
+          </Card>
 
-            {/* Dell'Arte Experience */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Dell'Arte Experience</CardTitle>
-                <CardDescription>Your involvement with Dell'Arte beyond being a student</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <Label>Roles at Dell'Arte</Label>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {dellArteRoles.map((role) => (
-                      <div key={role} className="flex items-center space-x-2">
-                        <Checkbox
-                          id={role}
-                          checked={profileData.dellArteRoles.includes(role)}
-                          onCheckedChange={(checked) =>
-                            handleArrayChange("dellArteRoles", role, checked as boolean)
-                          }
-                        />
-                        <Label htmlFor={role} className="text-sm">
-                          {role}
-                        </Label>
-                      </div>
-                    ))}
-                  </div>
+          {/* Dell'Arte Experience */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Dell'Arte Experience</CardTitle>
+              <CardDescription>Your involvement with Dell'Arte beyond being a student</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <Label>Roles at Dell'Arte</Label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {dellArteRoles.map((role) => (
+                    <div key={role} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={role}
+                        checked={profileData.dellArteRoles.includes(role)}
+                        onCheckedChange={(checked) =>
+                          handleArrayChange("dellArteRoles", role, checked as boolean)
+                        }
+                      />
+                      <Label htmlFor={role} className="text-sm">
+                        {role}
+                      </Label>
+                    </div>
+                  ))}
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </CardContent>
+          </Card>
 
-            {/* Privacy Settings */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <Eye className="h-5 w-5 mr-2" />
-                  Privacy Settings
-                </CardTitle>
-                <CardDescription>Control who can see your profile information</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <Label htmlFor="profileVisibility">Profile Visibility</Label>
-                  <Select
-                    value={profileData.profileVisibility}
-                    onValueChange={(value) => handleInputChange("profileVisibility", value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="public">Public - Visible to everyone</SelectItem>
-                      <SelectItem value="alumni-only">Alumni Only - Visible to Dell'Arte alumni</SelectItem>
-                      <SelectItem value="private">Private - Only visible to you</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </CardContent>
-            </Card>
+          {/* Privacy Settings */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Eye className="h-5 w-5 mr-2" />
+                Privacy Settings
+              </CardTitle>
+              <CardDescription>Control who can see your profile information</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                <Label htmlFor="profileVisibility">Profile Visibility</Label>
+                <Select
+                  value={profileData.profileVisibility}
+                  onValueChange={(value) => handleInputChange("profileVisibility", value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="public">Public - Visible to everyone</SelectItem>
+                    <SelectItem value="alumni-only">Alumni Only - Visible to Dell'Arte alumni</SelectItem>
+                    <SelectItem value="private">Private - Only visible to you</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </CardContent>
+          </Card>
 
-            {/* Save Button */}
-            <div className="flex justify-end">
-              <Button onClick={handleSave} disabled={loading} className="bg-red-600 hover:bg-red-700">
-                <Save className="h-4 w-4 mr-2" />
-                {loading ? "Saving..." : "Save Profile"}
-              </Button>
-            </div>
+          {/* Save Button */}
+          <div className="flex justify-end">
+            <Button onClick={handleSave} disabled={loading} className="bg-red-600 hover:bg-red-700">
+              <Save className="h-4 w-4 mr-2" />
+              {loading ? "Saving..." : "Save Profile"}
+            </Button>
           </div>
         </div>
-      </main>
+      </div>
     </div>
   )
 }

@@ -99,8 +99,8 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-      <main className="max-w-2xl w-full mx-auto py-6 sm:px-6 lg:px-8">
+    <div className="flex-1 flex items-center justify-center p-6 bg-gray-50 overflow-y-auto">
+      <main className="max-w-2xl w-full">
         <Card>
           <CardHeader>
             <CardTitle className="text-2xl font-bold">Complete Your Profile</CardTitle>
