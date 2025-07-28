@@ -78,20 +78,22 @@ const ArrayInput = ({
   setItems,
 }: {
   label: string
-  items: string[]
+  items: string[] | undefined | null
   setItems: (items: string[]) => void
 }) => {
   const [inputValue, setInputValue] = useState("")
 
   const handleAddItem = () => {
-    if (inputValue && !items.includes(inputValue)) {
-      setItems([...items, inputValue])
+    const currentItems = items || []
+    if (inputValue && !currentItems.includes(inputValue)) {
+      setItems([...currentItems, inputValue])
       setInputValue("")
     }
   }
 
   const handleRemoveItem = (itemToRemove: string) => {
-    setItems(items.filter((item) => item !== itemToRemove))
+    const currentItems = items || []
+    setItems(currentItems.filter((item) => item !== itemToRemove))
   }
 
   return (
@@ -104,7 +106,7 @@ const ArrayInput = ({
         </Button>
       </div>
       <div className="flex flex-wrap gap-2 mt-2">
-        {items.map((item) => (
+        {(items || []).map((item) => (
           <Badge key={item} variant="secondary">
             {item}
             <button type="button" className="ml-2" onClick={() => handleRemoveItem(item)}>
@@ -271,7 +273,7 @@ const EditForm = ({
       <div>
         <Label>Programs Attended</Label>
         <div className="space-y-2 mt-2">
-          {editingAlumni.programsAttended.map((program, index) => (
+          {(editingAlumni.programsAttended || []).map((program, index) => (
             <div key={index} className="flex items-center space-x-2 p-2 border rounded-md">
               <div className="grid grid-cols-3 gap-2 flex-1">
                 <Input
@@ -360,12 +362,13 @@ const EditForm = ({
           {allTags.map((tag) => (
             <Badge
               key={tag}
-              variant={editingAlumni.tags.includes(tag) ? "default" : "outline"}
+              variant={(editingAlumni.tags || []).includes(tag) ? "default" : "outline"}
               className="cursor-pointer"
               onClick={() => {
-                const newTags = editingAlumni.tags.includes(tag)
-                  ? editingAlumni.tags.filter((t) => t !== tag)
-                  : [...editingAlumni.tags, tag]
+                const currentTags = editingAlumni.tags || []
+                const newTags = currentTags.includes(tag)
+                  ? currentTags.filter((t) => t !== tag)
+                  : [...currentTags, tag]
                 updateEditingAlumni("tags", newTags)
               }}
             >
@@ -709,8 +712,8 @@ export default function AlumniManagement(): ReactNode {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+    <div className="flex-1 p-6 bg-gray-50 overflow-y-auto">
+      <div className="max-w-7xl mx-auto">
         <div className="px-4 py-6 sm:px-0">
           <div className="flex flex-col sm:flex-row justify-between sm:items-center mb-8 gap-4">
             <div>
@@ -850,7 +853,7 @@ export default function AlumniManagement(): ReactNode {
             </div>
           )}
         </div>
-      </main>
+      </div>
 
       {/* Detail Modal */}
       <Dialog open={showDetailModal} onOpenChange={setShowDetailModal}>

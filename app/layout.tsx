@@ -24,7 +24,7 @@ export default function RootLayout({
           <ThemeProvider attribute="class" forcedTheme="light" disableTransitionOnChange>
             <div className="flex flex-col min-h-screen">
               <Header />
-              <main className="flex-1">{children}</main>
+              <main className="flex-1 flex">{children}</main>
             </div>
             <Toaster />
           </ThemeProvider>

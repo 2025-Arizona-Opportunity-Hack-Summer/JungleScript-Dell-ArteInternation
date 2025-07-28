@@ -403,294 +403,49 @@ export default function AlumniMap() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Map Container with Margins */}
-      <main className="p-6">
-        <div className="relative h-[calc(100vh-128px)] bg-gray-400 rounded-2xl overflow-hidden shadow-lg">
-          {/* Map Background */}
-          {process.env.NEXT_PUBLIC_MAPBOX_API ? (
-            <div ref={mapContainer} className="w-full h-full" />
-          ) : (
-            <div className="w-full h-full bg-gray-400 flex items-center justify-center">
-              <div className="text-center text-white">
-                <MapPin className="h-12 w-12 mx-auto mb-4 opacity-60" />
-                <p className="text-lg font-medium">Mapbox API key required</p>
-                <p className="text-sm opacity-80">Add NEXT_PUBLIC_MAPBOX_API to environment variables</p>
-              </div>
+    <div className="p-6 bg-gray-50 flex-1 flex flex-col">
+      <div className="relative flex-1 bg-gray-400 rounded-2xl overflow-hidden shadow-lg">
+        {/* Map Background */}
+        {process.env.NEXT_PUBLIC_MAPBOX_API ? (
+          <div ref={mapContainer} className="w-full h-full" />
+        ) : (
+          <div className="w-full h-full bg-gray-400 flex items-center justify-center">
+            <div className="text-center text-white">
+              <MapPin className="h-12 w-12 mx-auto mb-4 opacity-60" />
+              <p className="text-lg font-medium">Mapbox API key required</p>
+              <p className="text-sm opacity-80">Add NEXT_PUBLIC_MAPBOX_API to environment variables</p>
             </div>
-          )}
+          </div>
+        )}
 
-          {/* Mobile Overlay */}
-          {isMobile && (
-            <>
-              {/* Mobile Bottom Panel */}
-              <div className="absolute bottom-0 left-0 right-0 z-40">
-                {/* Collapsed State */}
-                {!sidebarExpanded && (
-                  <div
-                    className={`bg-white rounded-t-xl shadow-lg p-4 transition-all duration-300 ${searchFocused ? "h-[50vh]" : ""}`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="relative flex-1 mr-4">
-                        <Input
-                          ref={searchInputRef}
-                          placeholder="Search for Alumni"
-                          value={searchQuery}
-                          onChange={(e) => setSearchQuery(e.target.value)}
-                          onFocus={() => setSearchFocused(true)}
-                          onBlur={() => setSearchFocused(false)}
-                          className="pl-10"
-                        />
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                      </div>
-                    </div>
-                    {searchFocused && (
-                      <div className="mt-4 flex-1 overflow-y-auto">
-                        <h3 className="text-sm font-medium text-gray-700 mb-3">
-                          Users of the network ({filteredAlumni.length})
-                        </h3>
-                        <div className="space-y-3 px-1">
-                          {filteredAlumni.map((alumni) => (
-                            <Card
-                              key={alumni.id}
-                              className={`cursor-pointer transition-all hover:shadow-md ${
-                                selectedAlumniId === alumni.id.toString() ? "ring-2 ring-blue-500 bg-blue-50" : ""
-                              }`}
-                              onClick={() => handleAlumniClick(alumni)}
-                            >
-                              <CardContent className="p-3">
-                                <div className="flex items-center space-x-3">
-                                  <Avatar className="h-10 w-10">
-                                    <AvatarFallback className="text-sm bg-red-100 text-red-700">
-                                      {getInitials(alumni.firstName, alumni.lastName)}
-                                    </AvatarFallback>
-                                  </Avatar>
-                                  <div className="flex-1 min-w-0">
-                                    <p className="font-medium text-gray-900 text-sm">
-                                      {alumni.firstName} {alumni.lastName}
-                                    </p>
-                                    <p className="text-xs text-gray-500 truncate">{getLocation(alumni)}</p>
-                                  </div>
-                                </div>
-                              </CardContent>
-                            </Card>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    <Button variant="ghost" size="sm" className="w-full mt-2" onClick={() => setSidebarExpanded(true)}>
-                      <ChevronUp className="h-4 w-4" />
-                    </Button>
-                  </div>
-                )}
-
-                {/* Expanded State */}
-                {sidebarExpanded && (
-                  <div
-                    className={`bg-white rounded-t-xl shadow-lg flex flex-col ${viewMode === "detail" ? "h-auto max-h-[50vh]" : "h-[50vh]"}`}
-                  >
-                    {/* Header */}
-                    <div className="p-2 border-b border-gray-200 flex items-center justify-between">
-                      {viewMode === "detail" ? (
-                        <Button variant="ghost" size="sm" onClick={handleBackToList}>
-                          <ArrowLeft className="h-4 w-4 mr-1" />
-                          <span className="font-normal">Back</span>
-                        </Button>
-                      ) : (
-                        <Button variant="ghost" size="icon" onClick={() => setSidebarExpanded(false)}>
-                          <ChevronLeft className="h-4 w-4" />
-                        </Button>
-                      )}
-                      {viewMode === "list" && (
-                        <div className="relative flex-1 mx-4">
-                          <Input
-                            ref={searchInputRef}
-                            placeholder="Search for Alumni"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="pl-10"
-                          />
-                          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Content */}
-                    <div className="flex-1 overflow-y-auto p-4">
-                      {viewMode === "list" ? (
-                        /* Users Section */
-                        <div>
-                          <h3 className="text-sm font-medium text-gray-700 mb-3">
-                            Users of the network ({filteredAlumni.length})
-                          </h3>
-                          <div className="space-y-3 px-1">
-                            {filteredAlumni.map((alumni) => (
-                              <Card
-                                key={alumni.id}
-                                className={`cursor-pointer transition-all hover:shadow-md ${
-                                  selectedAlumniId === alumni.id.toString() ? "ring-2 ring-blue-500 bg-blue-50" : ""
-                                }`}
-                                onClick={() => handleAlumniClick(alumni)}
-                              >
-                                <CardContent className="p-3">
-                                  <div className="flex items-center space-x-3">
-                                    <Avatar className="h-10 w-10">
-                                      <AvatarFallback className="text-sm bg-red-100 text-red-700">
-                                        {getInitials(alumni.firstName, alumni.lastName)}
-                                      </AvatarFallback>
-                                    </Avatar>
-                                    <div className="flex-1 min-w-0">
-                                      <p className="font-medium text-gray-900 text-sm">
-                                        {alumni.firstName} {alumni.lastName}
-                                      </p>
-                                      <p className="text-xs text-gray-500 truncate">{getLocation(alumni)}</p>
-                                    </div>
-                                  </div>
-                                </CardContent>
-                              </Card>
-                            ))}
-                          </div>
-                        </div>
-                      ) : (
-                        /* Detail View */
-                        selectedAlumni && (
-                          <div className="space-y-3">
-                            <div className="flex items-center space-x-3">
-                              <Avatar className="h-14 w-14">
-                                <AvatarFallback className="text-lg bg-red-100 text-red-700">
-                                  {getInitials(selectedAlumni.firstName, selectedAlumni.lastName)}
-                                </AvatarFallback>
-                              </Avatar>
-                              <div className="flex-1">
-                                <h2 className="text-lg font-bold text-gray-900">
-                                  {selectedAlumni.firstName} {selectedAlumni.lastName}
-                                </h2>
-                                <p className="text-sm text-gray-600 flex items-center">
-                                  <MapPin className="h-4 w-4 mr-1" />
-                                  {getLocation(selectedAlumni)}
-                                </p>
-                                <p className="text-sm text-gray-500">{getLastActive(selectedAlumni)}</p>
-                              </div>
-                            </div>
-
-                            <div className="space-y-2 text-sm">
-                              {selectedAlumni?.currentWork?.title && (
-                                <div>
-                                  <h3 className="font-semibold text-gray-800 mb-1">Current Work</h3>
-                                  <p className="text-gray-600">{selectedAlumni.currentWork.title}</p>
-                                  {selectedAlumni.currentWork.organization && (
-                                    <p className="text-xs text-gray-500">{selectedAlumni.currentWork.organization}</p>
-                                  )}
-                                </div>
-                              )}
-
-                              {selectedAlumni?.programsAttended?.[0]?.program && (
-                                <div>
-                                  <h3 className="font-semibold text-gray-800 mb-1">Program</h3>
-                                  <p className="text-gray-600">{selectedAlumni.programsAttended[0].program}</p>
-                                  {selectedAlumni.programsAttended[0].cohort && (
-                                    <p className="text-xs text-gray-500">{selectedAlumni.programsAttended[0].cohort}</p>
-                                  )}
-                                </div>
-                              )}
-
-                              {selectedAlumni?.biography && (
-                                <div>
-                                  <h3 className="font-semibold text-gray-800 mb-1">About</h3>
-                                  <div
-                                    className={`text-gray-600 text-xs leading-relaxed custom-scroll ${
-                                      isBioExpanded ? "max-h-24 overflow-y-auto" : "line-clamp-2"
-                                    }`}
-                                  >
-                                    {selectedAlumni.biography}
-                                  </div>
-                                  {selectedAlumni.biography.length > 100 && (
-                                    <Button
-                                      variant="link"
-                                      size="sm"
-                                      className="p-0 h-auto"
-                                      onClick={() => setIsBioExpanded(!isBioExpanded)}
-                                    >
-                                      {isBioExpanded ? "Read less" : "Read more"}
-                                    </Button>
-                                  )}
-                                </div>
-                              )}
-                            </div>
-
-                            <div className="flex space-x-2 pt-2">
-                                <Button size="sm" className="flex-1" onClick={() => handleContactClick(selectedAlumni)}>
-                                  <Mail className="h-4 w-4 mr-2" />
-                                  Contact
-                                </Button>
-                                {(selectedAlumni.portfolioLinks?.website ||
-                                  selectedAlumni.portfolioLinks?.linkedin ||
-                                  selectedAlumni.portfolioLinks?.instagram ||
-                                  selectedAlumni.portfolioLinks?.youtube) && (
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => handleWebsiteClick(selectedAlumni)}
-                                  >
-                                    <Globe className="h-4 w-4" />
-                                  </Button>
-                                )}
-                              </div>
-                          </div>
-                        )
-                      )}
-                    </div>
-
-                    {/* Collapse Button - only show in list view */}
-                    {viewMode === "list" && (
-                      <div className="p-2 border-t border-gray-200">
-                        <Button variant="ghost" size="sm" className="w-full" onClick={() => setSidebarExpanded(false)}>
-                          <ChevronDown className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            </>
-          )}
-
-          {/* Desktop Floating Sidebar */}
-          {!isMobile && (
-            <div
-              className={`absolute top-6 left-6 z-40 w-96 max-w-[clamp(330px,25vw,400px)] ${viewMode === "detail" ? "max-h-[calc(100vh-128px)]" : "bottom-6"}`}
-            >
-              <div
-                className={`bg-white rounded-xl shadow-lg overflow-hidden flex flex-col ${viewMode === "detail" ? "h-auto" : "h-full"}`}
-              >
-                {/* Fixed Header with Search or Back Button */}
-                <div className="p-3 border-b border-gray-200 flex-shrink-0">
-                  {viewMode === "detail" ? (
-                    <div className="flex items-center">
-                      <Button variant="ghost" size="sm" onClick={handleBackToList} className="mr-2 h-8 w-8 p-0">
-                        <ArrowLeft className="h-4 w-4" />
-                      </Button>
-                      <h2 className="font-medium text-gray-800">Profile Details</h2>
-                    </div>
-                  ) : (
-                    <div className="relative">
+        {/* Mobile Overlay */}
+        {isMobile && (
+          <>
+            {/* Mobile Bottom Panel */}
+            <div className="absolute bottom-0 left-0 right-0 z-40">
+              {/* Collapsed State */}
+              {!sidebarExpanded && (
+                <div
+                  className={`bg-white rounded-t-xl shadow-lg p-4 transition-all duration-300 ${
+                    searchFocused ? "h-[50vh]" : ""
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="relative flex-1 mr-4">
                       <Input
                         ref={searchInputRef}
                         placeholder="Search for Alumni"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
+                        onFocus={() => setSearchFocused(true)}
+                        onBlur={() => setSearchFocused(false)}
                         className="pl-10"
                       />
                       <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                     </div>
-                  )}
-                </div>
-
-                {/* Content */}
-                <div className={`${viewMode === "list" ? "flex-1 overflow-y-auto" : ""} p-4`}>
-                  {viewMode === "list" ? (
-                    /* List View */
-                    <div>
+                  </div>
+                  {searchFocused && (
+                    <div className="mt-4 flex-1 overflow-y-auto">
                       <h3 className="text-sm font-medium text-gray-700 mb-3">
                         Users of the network ({filteredAlumni.length})
                       </h3>
@@ -722,76 +477,159 @@ export default function AlumniMap() {
                         ))}
                       </div>
                     </div>
-                  ) : (
-                    /* Detail View */
-                    selectedAlumni && (
-                      <div className="space-y-4">
-                        <div className="flex items-center space-x-4">
-                          <Avatar className="h-16 w-16">
-                            <AvatarFallback className="text-xl bg-red-100 text-red-700">
-                              {getInitials(selectedAlumni.firstName, selectedAlumni.lastName)}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="flex-1">
-                            <h2 className="text-xl font-bold text-gray-900 mb-1">
-                              {selectedAlumni.firstName} {selectedAlumni.lastName}
-                            </h2>
-                            <p className="text-gray-600 flex items-center mb-1 text-sm">
-                              <MapPin className="h-4 w-4 mr-1" />
-                              {getLocation(selectedAlumni)}
-                            </p>
-                            <p className="text-xs text-gray-500">{getLastActive(selectedAlumni)}</p>
-                          </div>
+                  )}
+                  <Button variant="ghost" size="sm" className="w-full mt-2" onClick={() => setSidebarExpanded(true)}>
+                    <ChevronUp className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
+
+              {/* Expanded State */}
+              {sidebarExpanded && (
+                <div
+                  className={`bg-white rounded-t-xl shadow-lg flex flex-col ${
+                    viewMode === "detail" ? "h-auto max-h-[50vh]" : "h-[50vh]"
+                  }`}
+                >
+                  {/* Header */}
+                  <div className="p-2 border-b border-gray-200 flex items-center justify-between">
+                    {viewMode === "detail" ? (
+                      <Button variant="ghost" size="sm" onClick={handleBackToList}>
+                        <ArrowLeft className="h-4 w-4 mr-1" />
+                        <span className="font-normal">Back</span>
+                      </Button>
+                    ) : (
+                      <Button variant="ghost" size="icon" onClick={() => setSidebarExpanded(false)}>
+                        <ChevronLeft className="h-4 w-4" />
+                      </Button>
+                    )}
+                    {viewMode === "list" && (
+                      <div className="relative flex-1 mx-4">
+                        <Input
+                          ref={searchInputRef}
+                          placeholder="Search for Alumni"
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          className="pl-10"
+                        />
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Content */}
+                  <div className="flex-1 overflow-y-auto p-4">
+                    {viewMode === "list" ? (
+                      /* Users Section */
+                      <div>
+                        <h3 className="text-sm font-medium text-gray-700 mb-3">
+                          Users of the network ({filteredAlumni.length})
+                        </h3>
+                        <div className="space-y-3 px-1">
+                          {filteredAlumni.map((alumni) => (
+                            <Card
+                              key={alumni.id}
+                              className={`cursor-pointer transition-all hover:shadow-md ${
+                                selectedAlumniId === alumni.id.toString() ? "ring-2 ring-blue-500 bg-blue-50" : ""
+                              }`}
+                              onClick={() => handleAlumniClick(alumni)}
+                            >
+                              <CardContent className="p-3">
+                                <div className="flex items-center space-x-3">
+                                  <Avatar className="h-10 w-10">
+                                    <AvatarFallback className="text-sm bg-red-100 text-red-700">
+                                      {getInitials(alumni.firstName, alumni.lastName)}
+                                    </AvatarFallback>
+                                  </Avatar>
+                                  <div className="flex-1 min-w-0">
+                                    <p className="font-medium text-gray-900 text-sm">
+                                      {alumni.firstName} {alumni.lastName}
+                                    </p>
+                                    <p className="text-xs text-gray-500 truncate">{getLocation(alumni)}</p>
+                                  </div>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          ))}
                         </div>
-
-                        <div className="space-y-3 text-sm">
-                          {selectedAlumni?.currentWork?.title && (
-                            <div>
-                              <h3 className="font-semibold text-gray-800 mb-1">Current Work</h3>
-                              <p className="text-gray-600">{selectedAlumni.currentWork.title}</p>
-                              {selectedAlumni.currentWork.organization && (
-                                <p className="text-xs text-gray-500">{selectedAlumni.currentWork.organization}</p>
-                              )}
+                      </div>
+                    ) : (
+                      /* Detail View */
+                      selectedAlumni && (
+                        <div className="space-y-3">
+                          <div className="flex items-center space-x-3">
+                            <Avatar className="h-14 w-14">
+                              <AvatarFallback className="text-lg bg-red-100 text-red-700">
+                                {getInitials(selectedAlumni.firstName, selectedAlumni.lastName)}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1">
+                              <h2 className="text-lg font-bold text-gray-900">
+                                {selectedAlumni.firstName} {selectedAlumni.lastName}
+                              </h2>
+                              <p className="text-sm text-gray-600 flex items-center">
+                                <MapPin className="h-4 w-4 mr-1" />
+                                {getLocation(selectedAlumni)}
+                              </p>
+                              <p className="text-sm text-gray-500">{getLastActive(selectedAlumni)}</p>
                             </div>
-                          )}
+                          </div>
 
-                          {selectedAlumni?.programsAttended?.[0]?.program && (
-                            <div>
-                              <h3 className="font-semibold text-gray-800 mb-1">Program</h3>
-                              <p className="text-gray-600">{selectedAlumni.programsAttended[0].program}</p>
-                              {selectedAlumni.programsAttended[0].cohort && (
-                                <p className="text-xs text-gray-500">{selectedAlumni.programsAttended[0].cohort}</p>
-                              )}
-                            </div>
-                          )}
+                          <div className="space-y-2 text-sm">
+                            {selectedAlumni?.currentWork?.title && (
+                              <div>
+                                <h3 className="font-semibold text-gray-800 mb-1">Current Work</h3>
+                                <p className="text-gray-600">{selectedAlumni.currentWork.title}</p>
+                                {selectedAlumni.currentWork.organization && (
+                                  <p className="text-xs text-gray-500">
+                                    {selectedAlumni.currentWork.organization}
+                                  </p>
+                                )}
+                              </div>
+                            )}
 
-                          {selectedAlumni?.biography && (
-                            <div>
-                              <h3 className="font-semibold text-gray-800 mb-1">About</h3>
-                              <div className={`space-y-2 ${isBioExpanded ? "max-h-36 overflow-y-auto" : ""}`}>
+                            {selectedAlumni?.programsAttended?.[0]?.program && (
+                              <div>
+                                <h3 className="font-semibold text-gray-800 mb-1">Program</h3>
+                                <p className="text-gray-600">{selectedAlumni.programsAttended[0].program}</p>
+                                {selectedAlumni.programsAttended[0].cohort && (
+                                  <p className="text-xs text-gray-500">
+                                    {selectedAlumni.programsAttended[0].cohort}
+                                  </p>
+                                )}
+                              </div>
+                            )}
+
+                            {selectedAlumni?.biography && (
+                              <div>
+                                <h3 className="font-semibold text-gray-800 mb-1">About</h3>
                                 <div
-                                  className={`text-gray-600 text-xs leading-relaxed ${
-                                    !isBioExpanded ? "line-clamp-4" : ""
+                                  className={`text-gray-600 text-xs leading-relaxed custom-scroll ${
+                                    isBioExpanded ? "max-h-24 overflow-y-auto" : "line-clamp-2"
                                   }`}
                                 >
                                   {selectedAlumni.biography}
                                 </div>
+                                {selectedAlumni.biography.length > 100 && (
+                                  <Button
+                                    variant="link"
+                                    size="sm"
+                                    className="p-0 h-auto"
+                                    onClick={() => setIsBioExpanded(!isBioExpanded)}
+                                  >
+                                    {isBioExpanded ? "Read less" : "Read more"}
+                                  </Button>
+                                )}
                               </div>
-                              {selectedAlumni.biography.length > 200 && (
-                                <Button
-                                  variant="link"
-                                  size="sm"
-                                  className="p-0 h-auto mt-1"
-                                  onClick={() => setIsBioExpanded(!isBioExpanded)}
-                                >
-                                  {isBioExpanded ? "Read less" : "Read more"}
-                                </Button>
-                              )}
-                            </div>
-                          )}
+                            )}
+                          </div>
 
-                          <div className="flex space-x-3 pt-4">
-                            <Button className="flex-1" onClick={() => handleContactClick(selectedAlumni)}>
+                          <div className="flex space-x-2 pt-2">
+                            <Button
+                              size="sm"
+                              className="flex-1"
+                              onClick={() => handleContactClick(selectedAlumni)}
+                            >
                               <Mail className="h-4 w-4 mr-2" />
                               Contact
                             </Button>
@@ -799,59 +637,243 @@ export default function AlumniMap() {
                               selectedAlumni.portfolioLinks?.linkedin ||
                               selectedAlumni.portfolioLinks?.instagram ||
                               selectedAlumni.portfolioLinks?.youtube) && (
-                              <Button variant="outline" onClick={() => handleWebsiteClick(selectedAlumni)}>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleWebsiteClick(selectedAlumni)}
+                              >
                                 <Globe className="h-4 w-4" />
                               </Button>
                             )}
                           </div>
                         </div>
-                      </div>
-                    )
+                      )
+                    )}
+                  </div>
+
+                  {/* Collapse Button - only show in list view */}
+                  {viewMode === "list" && (
+                    <div className="p-2 border-t border-gray-200">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="w-full"
+                        onClick={() => setSidebarExpanded(false)}
+                      >
+                        <ChevronDown className="h-4 w-4" />
+                      </Button>
+                    </div>
                   )}
                 </div>
+              )}
+            </div>
+          </>
+        )}
+
+        {/* Desktop Floating Sidebar */}
+        {!isMobile && (
+          <div
+            className={`absolute top-6 left-6 z-40 w-96 max-w-[clamp(330px,25vw,400px)] ${
+              viewMode === "detail" ? "max-h-[calc(100%-48px)]" : "bottom-6"
+            }`}
+          >
+            <div
+              className={`bg-white rounded-xl shadow-lg overflow-hidden flex flex-col ${
+                viewMode === "detail" ? "h-auto" : "h-full"
+              }`}
+            >
+              {/* Fixed Header with Search or Back Button */}
+              <div className="p-3 border-b border-gray-200 flex-shrink-0">
+                {viewMode === "detail" ? (
+                  <div className="flex items-center">
+                    <Button variant="ghost" size="sm" onClick={handleBackToList} className="mr-2 h-8 w-8 p-0">
+                      <ArrowLeft className="h-4 w-4" />
+                    </Button>
+                    <h2 className="font-medium text-gray-800">Profile Details</h2>
+                  </div>
+                ) : (
+                  <div className="relative">
+                    <Input
+                      ref={searchInputRef}
+                      placeholder="Search for Alumni"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="pl-10"
+                    />
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                  </div>
+                )}
+              </div>
+
+              {/* Content */}
+              <div className={`${viewMode === "list" ? "flex-1 overflow-y-auto" : ""} p-4`}>
+                {viewMode === "list" ? (
+                  /* List View */
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-700 mb-3">
+                      Users of the network ({filteredAlumni.length})
+                    </h3>
+                    <div className="space-y-3 px-1">
+                      {filteredAlumni.map((alumni) => (
+                        <Card
+                          key={alumni.id}
+                          className={`cursor-pointer transition-all hover:shadow-md ${
+                            selectedAlumniId === alumni.id.toString() ? "ring-2 ring-blue-500 bg-blue-50" : ""
+                          }`}
+                          onClick={() => handleAlumniClick(alumni)}
+                        >
+                          <CardContent className="p-3">
+                            <div className="flex items-center space-x-3">
+                              <Avatar className="h-10 w-10">
+                                <AvatarFallback className="text-sm bg-red-100 text-red-700">
+                                  {getInitials(alumni.firstName, alumni.lastName)}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div className="flex-1 min-w-0">
+                                <p className="font-medium text-gray-900 text-sm">
+                                  {alumni.firstName} {alumni.lastName}
+                                </p>
+                                <p className="text-xs text-gray-500 truncate">{getLocation(alumni)}</p>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  /* Detail View */
+                  selectedAlumni && (
+                    <div className="space-y-4">
+                      <div className="flex items-center space-x-4">
+                        <Avatar className="h-16 w-16">
+                          <AvatarFallback className="text-xl bg-red-100 text-red-700">
+                            {getInitials(selectedAlumni.firstName, selectedAlumni.lastName)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1">
+                          <h2 className="text-xl font-bold text-gray-900 mb-1">
+                            {selectedAlumni.firstName} {selectedAlumni.lastName}
+                          </h2>
+                          <p className="text-gray-600 flex items-center mb-1 text-sm">
+                            <MapPin className="h-4 w-4 mr-1" />
+                            {getLocation(selectedAlumni)}
+                          </p>
+                          <p className="text-xs text-gray-500">{getLastActive(selectedAlumni)}</p>
+                        </div>
+                      </div>
+
+                      <div className="space-y-3 text-sm">
+                        {selectedAlumni?.currentWork?.title && (
+                          <div>
+                            <h3 className="font-semibold text-gray-800 mb-1">Current Work</h3>
+                            <p className="text-gray-600">{selectedAlumni.currentWork.title}</p>
+                            {selectedAlumni.currentWork.organization && (
+                              <p className="text-xs text-gray-500">{selectedAlumni.currentWork.organization}</p>
+                            )}
+                          </div>
+                        )}
+
+                        {selectedAlumni?.programsAttended?.[0]?.program && (
+                          <div>
+                            <h3 className="font-semibold text-gray-800 mb-1">Program</h3>
+                            <p className="text-gray-600">{selectedAlumni.programsAttended[0].program}</p>
+                            {selectedAlumni.programsAttended[0].cohort && (
+                              <p className="text-xs text-gray-500">
+                                {selectedAlumni.programsAttended[0].cohort}
+                              </p>
+                            )}
+                          </div>
+                        )}
+
+                        {selectedAlumni?.biography && (
+                          <div>
+                            <h3 className="font-semibold text-gray-800 mb-1">About</h3>
+                            <div
+                              className={`space-y-2 ${isBioExpanded ? "max-h-36 overflow-y-auto" : ""}`}
+                            >
+                              <div
+                                className={`text-gray-600 text-xs leading-relaxed ${
+                                  !isBioExpanded ? "line-clamp-4" : ""
+                                }`}
+                              >
+                                {selectedAlumni.biography}
+                              </div>
+                            </div>
+                            {selectedAlumni.biography.length > 200 && (
+                              <Button
+                                variant="link"
+                                size="sm"
+                                className="p-0 h-auto mt-1"
+                                onClick={() => setIsBioExpanded(!isBioExpanded)}
+                              >
+                                {isBioExpanded ? "Read less" : "Read more"}
+                              </Button>
+                            )}
+                          </div>
+                        )}
+
+                        <div className="flex space-x-3 pt-4">
+                          <Button className="flex-1" onClick={() => handleContactClick(selectedAlumni)}>
+                            <Mail className="h-4 w-4 mr-2" />
+                            Contact
+                          </Button>
+                          {(selectedAlumni.portfolioLinks?.website ||
+                            selectedAlumni.portfolioLinks?.linkedin ||
+                            selectedAlumni.portfolioLinks?.instagram ||
+                            selectedAlumni.portfolioLinks?.youtube) && (
+                            <Button variant="outline" onClick={() => handleWebsiteClick(selectedAlumni)}>
+                              <Globe className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )
+                )}
               </div>
             </div>
-          )}
-        </div>
+          </div>
+        )}
+      </div>
 
-        {/* Welcome Modal */}
-        <Dialog open={showWelcomeModal} onOpenChange={setShowWelcomeModal}>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle className="text-center text-xl">Welcome, {user?.firstName}! 🎭</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-3">
-              <p className="text-center text-gray-600 mb-6">Ready to connect with the Dell'Arte community?</p>
+      {/* Welcome Modal */}
+      <Dialog open={showWelcomeModal} onOpenChange={setShowWelcomeModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-center text-xl">Welcome, {user?.firstName}! 🎭</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <p className="text-center text-gray-600 mb-6">Ready to connect with the Dell'Arte community?</p>
 
-              <Button
-                onClick={handleSearchFocus}
-                className="w-full flex items-center justify-center space-x-2 bg-red-600 hover:bg-red-700"
-              >
-                <Search className="h-4 w-4" />
-                <span>Search for Alumni</span>
-              </Button>
+            <Button
+              onClick={handleSearchFocus}
+              className="w-full flex items-center justify-center space-x-2 bg-red-600 hover:bg-red-700"
+            >
+              <Search className="h-4 w-4" />
+              <span>Search for Alumni</span>
+            </Button>
 
-              <Button
-                onClick={handleUpdateProfile}
-                variant="outline"
-                className="w-full flex items-center justify-center space-x-2 bg-transparent"
-              >
-                <LucideUser className="h-4 w-4" />
-                <span>Update Profile</span>
-              </Button>
+            <Button
+              onClick={handleUpdateProfile}
+              variant="outline"
+              className="w-full flex items-center justify-center space-x-2 bg-transparent"
+            >
+              <LucideUser className="h-4 w-4" />
+              <span>Update Profile</span>
+            </Button>
 
-              <Button
-                onClick={handleReferral}
-                variant="outline"
-                className="w-full flex items-center justify-center space-x-2 bg-transparent"
-              >
-                <Share2 className="h-4 w-4" />
-                <span>Refer a Friend</span>
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
-      </main>
+            <Button
+              onClick={handleReferral}
+              variant="outline"
+              className="w-full flex items-center justify-center space-x-2 bg-transparent"
+            >
+              <Share2 className="h-4 w-4" />
+              <span>Refer a Friend</span>
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Contact Modal */}
       <Dialog open={showContactModal} onOpenChange={setShowContactModal}>

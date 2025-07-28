@@ -6,8 +6,10 @@ import { Users, UserPlus, Mail, Upload, TrendingUp } from "lucide-react"
 
 import Link from "next/link"
 import { useAlumniStore } from "@/lib/alumni-store"
+import { useRouter } from "next/navigation"
 
 export default function AdminDashboard() {
+  const router = useRouter()
   const { alumni, loading, fetchAlumni } = useAlumniStore()
 
   useEffect(() => {
@@ -99,95 +101,93 @@ export default function AdminDashboard() {
   )
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <main className="h-[calc(100vh-64px)] flex flex-col">
-        <div className="flex-1 max-w-7xl mx-auto w-full py-8 px-4 sm:px-6 lg:px-8">
-          {/* Header */}
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
-            <p className="mt-2 text-gray-600">Overview of the Dell'Arte Alumni Network</p>
-          </div>
+    <div className="flex-1 p-6 bg-gray-50 overflow-y-auto">
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
+          <p className="mt-2 text-gray-600">Overview of the Dell'Arte Alumni Network</p>
+        </div>
 
-          {/* Stats Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
-            <StatCard
-              title="Total Alumni"
-              value={loading ? "..." : totalAlumni}
-              description="Registered in the network"
-              icon={Users}
-              trend={
-                percentageChange === 0
-                  ? "0% from last month"
-                  : `${percentageChange > 0 ? "+" : ""}${percentageChange.toFixed(1)}% from last month`
-              }
-            />
-            <StatCard
-              title="New Alumni (30 Days)"
-              value={loading ? "..." : newAlumniLast30Days}
-              description="Recently joined"
-              icon={UserPlus}
-              trend={
-                thirtyDayTrend >= 0
-                  ? `+${thirtyDayTrend} from previous 30 days`
-                  : `${thirtyDayTrend} from previous 30 days`
-              }
-            />
-            <StatCard
-              title="Active Users"
-              value={loading ? "..." : activeUsersLast90Days}
-              description="Updated profile in last 90 days"
-              icon={TrendingUp}
-              trend={
-                activeUsersTrend >= 0
-                  ? `+${activeUsersTrend} from previous 90 days`
-                  : `${activeUsersTrend} from previous 90 days`
-              }
-            />
-          </div>
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
+          <StatCard
+            title="Total Alumni"
+            value={loading ? "..." : totalAlumni}
+            description="Registered in the network"
+            icon={Users}
+            trend={
+              percentageChange === 0
+                ? "0% from last month"
+                : `${percentageChange > 0 ? "+" : ""}${percentageChange.toFixed(1)}% from last month`
+            }
+          />
+          <StatCard
+            title="New Alumni (30 Days)"
+            value={loading ? "..." : newAlumniLast30Days}
+            description="Recently joined"
+            icon={UserPlus}
+            trend={
+              thirtyDayTrend >= 0
+                ? `+${thirtyDayTrend} from previous 30 days`
+                : `${thirtyDayTrend} from previous 30 days`
+            }
+          />
+          <StatCard
+            title="Active Users"
+            value={loading ? "..." : activeUsersLast90Days}
+            description="Updated profile in last 90 days"
+            icon={TrendingUp}
+            trend={
+              activeUsersTrend >= 0
+                ? `+${activeUsersTrend} from previous 90 days`
+                : `${activeUsersTrend} from previous 90 days`
+            }
+          />
+        </div>
 
-          {/* Quick Actions */}
-          <div className="flex-1">
-            <h2 className="text-2xl font-semibold text-gray-900 mb-8">Quick Actions</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 h-64">
-              <Link href="/admin/alumni" className="group">
-                <Card className="h-full transition-all duration-200 hover:shadow-lg hover:scale-105 cursor-pointer border-2 hover:border-red-200">
-                  <CardContent className="h-full flex flex-col items-center justify-center text-center p-8">
-                    <div className="w-16 h-16 bg-red-600 rounded-full flex items-center justify-center mb-6 group-hover:bg-red-700 transition-colors">
-                      <UserPlus className="h-8 w-8 text-white" />
-                    </div>
-                    <h3 className="text-xl font-semibold text-gray-900 mb-2">Add New Alumni</h3>
-                    <p className="text-gray-600 text-sm">Create new alumni profiles and manage existing ones</p>
-                  </CardContent>
-                </Card>
-              </Link>
+        {/* Quick Actions */}
+        <div className="flex-1">
+          <h2 className="text-2xl font-semibold text-gray-900 mb-8">Quick Actions</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 h-64">
+            <Link href="/admin/alumni" className="group">
+              <Card className="h-full transition-all duration-200 hover:shadow-lg hover:scale-105 cursor-pointer border-2 hover:border-red-200">
+                <CardContent className="h-full flex flex-col items-center justify-center text-center p-8">
+                  <div className="w-16 h-16 bg-red-600 rounded-full flex items-center justify-center mb-6 group-hover:bg-red-700 transition-colors">
+                    <UserPlus className="h-8 w-8 text-white" />
+                  </div>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-2">Add New Alumni</h3>
+                  <p className="text-gray-600 text-sm">Create new alumni profiles and manage existing ones</p>
+                </CardContent>
+              </Card>
+            </Link>
 
-              <Link href="/admin/communications" className="group">
-                <Card className="h-full transition-all duration-200 hover:shadow-lg hover:scale-105 cursor-pointer border-2 hover:border-blue-200">
-                  <CardContent className="h-full flex flex-col items-center justify-center text-center p-8">
-                    <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mb-6 group-hover:bg-blue-700 transition-colors">
-                      <Mail className="h-8 w-8 text-white" />
-                    </div>
-                    <h3 className="text-xl font-semibold text-gray-900 mb-2">Send Bulk Email</h3>
-                    <p className="text-gray-600 text-sm">Communicate with alumni through targeted email campaigns</p>
-                  </CardContent>
-                </Card>
-              </Link>
+            <Link href="/admin/communications" className="group">
+              <Card className="h-full transition-all duration-200 hover:shadow-lg hover:scale-105 cursor-pointer border-2 hover:border-blue-200">
+                <CardContent className="h-full flex flex-col items-center justify-center text-center p-8">
+                  <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mb-6 group-hover:bg-blue-700 transition-colors">
+                    <Mail className="h-8 w-8 text-white" />
+                  </div>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-2">Send Bulk Email</h3>
+                  <p className="text-gray-600 text-sm">Communicate with alumni through targeted email campaigns</p>
+                </CardContent>
+              </Card>
+            </Link>
 
-              <Link href="/admin/import" className="group">
-                <Card className="h-full transition-all duration-200 hover:shadow-lg hover:scale-105 cursor-pointer border-2 hover:border-green-200">
-                  <CardContent className="h-full flex flex-col items-center justify-center text-center p-8">
-                    <div className="w-16 h-16 bg-green-600 rounded-full flex items-center justify-center mb-6 group-hover:bg-green-700 transition-colors">
-                      <Upload className="h-8 w-8 text-white" />
-                    </div>
-                    <h3 className="text-xl font-semibold text-gray-900 mb-2">Import Data</h3>
-                    <p className="text-gray-600 text-sm">Bulk upload alumni data from JSON files</p>
-                  </CardContent>
-                </Card>
-              </Link>
-            </div>
+            <Link href="/admin/import" className="group">
+              <Card className="h-full transition-all duration-200 hover:shadow-lg hover:scale-105 cursor-pointer border-2 hover:border-green-200">
+                <CardContent className="h-full flex flex-col items-center justify-center text-center p-8">
+                  <div className="w-16 h-16 bg-green-600 rounded-full flex items-center justify-center mb-6 group-hover:bg-green-700 transition-colors">
+                    <Upload className="h-8 w-8 text-white" />
+                  </div>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-2">Import Data</h3>
+                  <p className="text-gray-600 text-sm">Bulk upload alumni data from JSON files</p>
+                </CardContent>
+              </Card>
+            </Link>
           </div>
         </div>
-      </main>
+      </div>
     </div>
   )
 }

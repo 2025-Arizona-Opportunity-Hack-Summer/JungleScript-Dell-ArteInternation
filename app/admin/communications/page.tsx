@@ -100,8 +100,8 @@ export default function Communications() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+    <div className="flex-1 p-6 bg-gray-50 overflow-y-auto">
+      <div className="max-w-7xl mx-auto">
         <div className="px-4 py-6 sm:px-0">
           {/* Header */}
           <div className="mb-8">
@@ -267,7 +267,7 @@ export default function Communications() {
             </div>
           </div>
         </div>
-      </main>
+      </div>
     </div>
   )
 }
