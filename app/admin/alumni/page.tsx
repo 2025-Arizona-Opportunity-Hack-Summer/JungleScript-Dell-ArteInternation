@@ -768,7 +768,7 @@ export default function AlumniManagement(): ReactNode {
                 {/* Tags Filter */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Filter by Tags</label>
-                  <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto p-2 border rounded-md">
+                  <div className="flex flex-wrap gap-2 p-2 border rounded-md">
                     {allTags.map((tag) => (
                       <Badge
                         key={tag}
@@ -785,7 +785,7 @@ export default function AlumniManagement(): ReactNode {
 
               {/* Active Filters Display */}
               {(searchQuery || selectedProgram !== "all" || selectedTags.length > 0) && (
-                <div className="flex items-center space-x-2 text-sm text-gray-600">
+                <div className="flex flex-wrap items-center gap-2 text-sm text-gray-600">
                   <span>Active filters:</span>
                   {searchQuery && <Badge variant="secondary">Search: "{searchQuery}"</Badge>}
                   {selectedProgram !== "all" && <Badge variant="secondary">Program: {selectedProgram}</Badge>}

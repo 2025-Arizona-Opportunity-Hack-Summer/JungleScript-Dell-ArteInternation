@@ -11,7 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { LucideUser, Briefcase, Save, Eye } from "lucide-react"
+import { LucideUser, Briefcase, Save, Eye, UploadCloud } from "lucide-react"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import AddressAutofill from "@/components/ui/address-autofill"
 
 interface ProfileData {
@@ -92,6 +93,7 @@ export default function AlumniProfile() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [saved, setSaved] = useState(false)
+  const [showUploadModal, setShowUploadModal] = useState(false)
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -189,6 +191,17 @@ export default function AlumniProfile() {
     }
   }
 
+  const handleImageUpload = async (file: File) => {
+    if (!user) return
+    try {
+      await user.setProfileImage({ file })
+      // Optionally, you might want to refresh the user data or show a success message
+    } catch (error) {
+      console.error("Error uploading profile image:", error)
+      setError("Failed to upload profile image.")
+    }
+  }
+
   const getInitials = (firstName: string, lastName: string) => {
     return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase()
   }
@@ -226,11 +239,16 @@ export default function AlumniProfile() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center space-x-4">
-                <Avatar className="h-16 w-16 flex-shrink-0">
-                  <AvatarFallback className="bg-red-100 text-red-700 text-xl">
-                    {getInitials(profileData.firstName || "U", profileData.lastName || "U")}
-                  </AvatarFallback>
-                </Avatar>
+                <button onClick={() => setShowUploadModal(true)} className="relative">
+                  <Avatar className="h-16 w-16 flex-shrink-0">
+                    <AvatarFallback className="bg-red-100 text-red-700 text-xl">
+                      {getInitials(profileData.firstName || "U", profileData.lastName || "U")}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center rounded-full opacity-0 hover:opacity-100 transition-opacity">
+                    <p className="text-white text-xs">Edit</p>
+                  </div>
+                </button>
                 <div className="min-w-0">
                   <h2 className="text-xl sm:text-2xl font-bold truncate">
                     {profileData.firstName} {profileData.lastName}
@@ -485,6 +503,45 @@ export default function AlumniProfile() {
           </div>
         </div>
       </div>
+
+      <Dialog open={showUploadModal} onOpenChange={setShowUploadModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Upload Profile Picture</DialogTitle>
+            <DialogDescription>
+              Select a new image to use as your profile picture.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="p-6">
+            <input
+              type="file"
+              accept="image/*"
+              id="profile-image-upload"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0]
+                if (file) {
+                  handleImageUpload(file)
+                  setShowUploadModal(false)
+                }
+              }}
+            />
+            <label
+              htmlFor="profile-image-upload"
+              className="cursor-pointer flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-lg p-12 text-center hover:bg-gray-50"
+            >
+              <UploadCloud className="h-12 w-12 text-gray-400 mb-4" />
+              <p className="text-lg font-medium">Click to upload</p>
+              <p className="text-sm text-gray-600">or drag and drop an image</p>
+            </label>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowUploadModal(false)}>
+              Cancel
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
