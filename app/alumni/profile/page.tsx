@@ -195,7 +195,7 @@ export default function AlumniProfile() {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center min-h-screen">
+      <div className="flex-1 flex items-center justify-center">
         <div>Loading profile...</div>
       </div>
     )
