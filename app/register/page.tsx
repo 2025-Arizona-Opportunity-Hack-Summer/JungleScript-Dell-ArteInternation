@@ -9,8 +9,12 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Save } from "lucide-react"
+import { Save, Eye } from "lucide-react"
 import AddressAutofill from "@/components/ui/address-autofill"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { z } from "zod"
+
+const phoneSchema = z.string().regex(/^\d+$/, "Phone number must contain only digits")
 
 const programs = [
   "MFA in Ensemble-Based Physical Theatre",
@@ -37,9 +41,16 @@ export default function RegisterPage() {
     currentOrganization: "",
     firstName: "",
     lastName: "",
+    profileVisibility: "public",
+    websiteUrl: "",
+    linkedinUrl: "",
+    instagramUrl: "",
+    youtubeUrl: "",
   })
+  const [privacyConsentChecked, setPrivacyConsentChecked] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [validationErrors, setValidationErrors] = useState<{ [key: string]: string | null }>({})
 
   useEffect(() => {
     if (user) {
@@ -67,6 +78,17 @@ export default function RegisterPage() {
     else {
       setFormData((prev) => ({ ...prev, [field]: value }))
     }
+
+    if (field === "phone") {
+      const result = phoneSchema.safeParse(value)
+      setValidationErrors((prev) => ({ ...prev, phone: result.success ? null : result.error.issues[0].message }))
+    } else if (field === "firstName" || field === "lastName") {
+      if (!value) {
+        setValidationErrors((prev) => ({ ...prev, [field]: `${field === "firstName" ? "First" : "Last"} name is required.` }))
+      } else {
+        setValidationErrors((prev) => ({ ...prev, [field]: null }))
+      }
+    }
   }
 
   const handleArrayChange = (field: string, value: string, checked: boolean) => {
@@ -79,6 +101,23 @@ export default function RegisterPage() {
   }
 
   const handleSubmit = async () => {
+    const newErrors: { [key: string]: string | null } = {}
+    if (!formData.firstName) {
+      newErrors.firstName = "First name is required."
+    }
+    if (!formData.lastName) {
+      newErrors.lastName = "Last name is required."
+    }
+    if (!privacyConsentChecked) {
+      newErrors.privacyConsent = "You must agree to the privacy terms."
+    }
+
+    setValidationErrors((prev) => ({ ...prev, ...newErrors }))
+
+    if (Object.values(newErrors).some((e) => e !== null) || Object.values(validationErrors).some((e) => e !== null)) {
+      return
+    }
+
     setLoading(true)
     setError(null)
     try {
@@ -90,7 +129,7 @@ export default function RegisterPage() {
       if (!response.ok) {
         throw new Error("Failed to save profile.")
       }
-      router.push("/map") // Redirect to the map page on success
+      router.push("/map?from_register=true") // Redirect to the map page on success
     } catch (err) {
       setError(err instanceof Error ? err.message : "An unknown error occurred.")
     } finally {
@@ -125,6 +164,7 @@ export default function RegisterPage() {
                     value={formData.firstName}
                     onChange={(e) => handleInputChange("firstName", e.target.value)}
                   />
+                  {validationErrors.firstName && <p className="text-sm text-red-600 mt-1">{validationErrors.firstName}</p>}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="lastName">Last Name</Label>
@@ -133,6 +173,7 @@ export default function RegisterPage() {
                     value={formData.lastName}
                     onChange={(e) => handleInputChange("lastName", e.target.value)}
                   />
+                  {validationErrors.lastName && <p className="text-sm text-red-600 mt-1">{validationErrors.lastName}</p>}
                 </div>
               </div>
 
@@ -144,6 +185,7 @@ export default function RegisterPage() {
                   onChange={(e) => handleInputChange("phone", e.target.value)}
                   placeholder="(555) 123-4567"
                 />
+                {validationErrors.phone && <p className="text-sm text-red-600 mt-1">{validationErrors.phone}</p>}
               </div>
 
               <AddressAutofill
@@ -213,8 +255,98 @@ export default function RegisterPage() {
               </div>
             </div>
 
+            <div className="space-y-2">
+              <Label htmlFor="websiteUrl">Website URL</Label>
+              <Input
+                id="websiteUrl"
+                placeholder="https://yourwebsite.com"
+                value={formData.websiteUrl}
+                onChange={(e) => handleInputChange("websiteUrl", e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="linkedinUrl">LinkedIn Profile</Label>
+              <Input
+                id="linkedinUrl"
+                placeholder="https://linkedin.com/in/yourprofile"
+                value={formData.linkedinUrl}
+                onChange={(e) => handleInputChange("linkedinUrl", e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="instagramUrl">Instagram Profile</Label>
+              <Input
+                id="instagramUrl"
+                placeholder="https://instagram.com/yourprofile"
+                value={formData.instagramUrl}
+                onChange={(e) => handleInputChange("instagramUrl", e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="youtubeUrl">YouTube Channel</Label>
+              <Input
+                id="youtubeUrl"
+                placeholder="https://youtube.com/c/yourchannel"
+                value={formData.youtubeUrl}
+                onChange={(e) => handleInputChange("youtubeUrl", e.target.value)}
+              />
+            </div>
+
+            {/* Privacy Settings */}
+            <div className="space-y-2">
+              <Label htmlFor="profileVisibility" className="flex items-center">
+                <Eye className="h-4 w-4 mr-2" />
+                Profile Privacy
+              </Label>
+              <Select
+                value={formData.profileVisibility}
+                onValueChange={(value) => handleInputChange("profileVisibility", value)}
+              >
+                <SelectTrigger id="profileVisibility">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="public">Public</SelectItem>
+                  <SelectItem value="alumni-only">Alumni Only</SelectItem>
+                  <SelectItem value="private">Private</SelectItem>
+                </SelectContent>
+              </Select>
+              <div className="flex items-center space-x-3 pt-2">
+                <Checkbox
+                  id="privacyConsent"
+                  checked={privacyConsentChecked}
+                  onCheckedChange={(checked) => {
+                    setPrivacyConsentChecked(checked as boolean)
+                    if (checked) {
+                      setValidationErrors((prev) => ({ ...prev, privacyConsent: null }))
+                    }
+                  }}
+                />
+                <label
+                  htmlFor="privacyConsent"
+                  className="text-sm font-normal leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  I understand that if my profile is public, my contact information will be visible to everyone. My
+                  exact street address will never be shown, only my city and country.
+                </label>
+              </div>
+              {validationErrors.privacyConsent && (
+                <p className="text-sm text-red-600 mt-1">{validationErrors.privacyConsent}</p>
+              )}
+            </div>
+
             <div className="flex justify-end">
-              <Button onClick={handleSubmit} disabled={loading} className="bg-red-600 hover:bg-red-700">
+              <Button
+                onClick={handleSubmit}
+                disabled={
+                  loading ||
+                  !formData.firstName ||
+                  !formData.lastName ||
+                  !privacyConsentChecked ||
+                  !!validationErrors.phone
+                }
+                className="bg-red-600 hover:bg-red-700"
+              >
                 <Save className="h-4 w-4 mr-2" />
                 {loading ? "Saving..." : "Complete Profile"}
               </Button>

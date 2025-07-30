@@ -17,10 +17,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { SignOutButton } from "@clerk/nextjs"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { ChevronDown } from "lucide-react"
 
 export default function Header() {
   const { user, isLoaded } = useUser()
   const [isAdmin, setIsAdmin] = useState(false)
+  const [isMenuOpen, setIsMenuOpen] = useState(false)
 
   useEffect(() => {
     if (isLoaded && user) {
@@ -82,28 +85,25 @@ export default function Header() {
   const navItems = isAdmin ? adminNavItems : alumniNavItems
 
   return (
-    <header className="flex h-16 items-center justify-between border-b bg-white px-4 md:px-6">
-      <div className="flex items-center space-x-4">
-        <div className="flex items-center space-x-2">
-          <Link href={isAdmin ? "/admin/dashboard" : "/map"} className="flex items-center">
-            <div className="bg-red-600 p-2 rounded-md">
-              <Theater className="h-6 w-6 text-white" />
-            </div>
-          </Link>
-        </div>
-
-        <nav className="hidden md:flex items-center space-x-2">
-          {isAdmin &&
-            adminNavItems.map((item) => (
-              <Link key={item.label} href={item.href}>
-                <Button variant="ghost" className="flex items-center space-x-2">
-                  <item.icon className="h-4 w-4" />
-                  <span>{item.label}</span>
-                </Button>
-              </Link>
-            ))}
-        </nav>
+    <header className="relative flex h-16 items-center justify-between border-b bg-white px-4 md:px-6">
+      <div className="flex items-center">
+        <Link href={isAdmin ? "/admin/dashboard" : "/map"} className="flex items-center">
+          <div className="bg-red-600 p-2 rounded-md">
+            <Theater className="h-6 w-6 text-white" />
+          </div>
+        </Link>
       </div>
+
+      <nav className="hidden md:flex items-center space-x-2 absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+        {isAdmin &&
+          adminNavItems.map((item) => (
+            <Link key={item.label} href={item.href}>
+              <Button variant="ghost">
+                <span>{item.label}</span>
+              </Button>
+            </Link>
+          ))}
+      </nav>
 
       <div className="flex items-center space-x-4">
         {/* Mobile Navigation */}
@@ -164,10 +164,14 @@ export default function Header() {
 
         {/* User Dropdown */}
         <div className="hidden md:block">
-          <DropdownMenu>
+          <DropdownMenu onOpenChange={setIsMenuOpen}>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-                <UserCircle className="h-8 w-8" />
+              <Button variant="ghost" className="flex items-center space-x-2">
+                <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${isMenuOpen ? "rotate-180" : ""}`} />
+                <Avatar className="h-10 w-10">
+                  <AvatarImage src={user.imageUrl} />
+                  <AvatarFallback>{user.firstName?.charAt(0)}</AvatarFallback>
+                </Avatar>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-56" align="end" forceMount>

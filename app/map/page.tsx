@@ -5,18 +5,23 @@ import { useUser } from "@clerk/nextjs"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { Search, MapPin, ChevronDown, ChevronUp, ChevronLeft, ArrowLeft, Share2, LucideUser } from "lucide-react"
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
+import { Badge } from "@/components/ui/badge"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Search, MapPin, ChevronDown, ChevronUp, ChevronLeft, ArrowLeft, Share2, LucideUser, Users, Lock, Globe, Linkedin, Instagram, Youtube, Filter, Check } from "lucide-react"
 import type mapboxgl from "mapbox-gl"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Phone, Mail, Globe, Linkedin, Instagram, Youtube } from "lucide-react"
+import { Phone, Mail } from "lucide-react"
 import { useAlumniStore, type AlumniProfile } from "@/lib/alumni-store"
 import { format } from "date-fns"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 
 export default function AlumniMap() {
-  const { user } = useUser()
+  const { user, isLoaded } = useUser()
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { alumni, loading, error, fetchAlumni } = useAlumniStore()
 
   const mapContainer = useRef<HTMLDivElement>(null)
@@ -29,6 +34,8 @@ export default function AlumniMap() {
   const [selectedAlumni, setSelectedAlumni] = useState<AlumniProfile | null>(null)
 
   const [searchQuery, setSearchQuery] = useState("")
+  const [selectedProgram, setSelectedProgram] = useState("all")
+  const [selectedCountry, setSelectedCountry] = useState("all")
   const [sidebarExpanded, setSidebarExpanded] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
   const [geojson, setGeojson] = useState({
@@ -36,11 +43,15 @@ export default function AlumniMap() {
     features: [] as any[],
   })
   const [searchFocused, setSearchFocused] = useState(false)
+  const [isAdmin, setIsAdmin] = useState(false)
 
   const [showContactModal, setShowContactModal] = useState(false)
   const [showWebsiteModal, setShowWebsiteModal] = useState(false)
   const [showWelcomeModal, setShowWelcomeModal] = useState(false)
   const [isBioExpanded, setIsBioExpanded] = useState(false)
+  const [showTutorial, setShowTutorial] = useState(false)
+  const [showFilterModal, setShowFilterModal] = useState(false)
+  const [isTagPopoverOpen, setIsTagPopoverOpen] = useState(false)
 
   const searchInputRef = useRef<HTMLInputElement>(null)
 
@@ -49,16 +60,49 @@ export default function AlumniMap() {
     fetchAlumni()
   }, [fetchAlumni])
 
+  const { uniquePrograms, uniqueCountries, uniqueTags } = useMemo(() => {
+    const programs = new Set<string>()
+    const countries = new Set<string>()
+    alumni.forEach((alum) => {
+      alum.programsAttended.forEach((p) => {
+        if (p.program) programs.add(p.program)
+      })
+      if (alum.address.country) {
+        if (alum.address.country === "USA") {
+          countries.add("United States")
+        } else {
+          countries.add(alum.address.country)
+        }
+      }
+    })
+    return {
+      uniquePrograms: Array.from(programs).sort(),
+      uniqueCountries: Array.from(countries).sort(),
+    }
+  }, [alumni])
+
   const filteredAlumni = useMemo(() => {
     return alumni.filter((alumni) => {
       const searchLower = searchQuery.toLowerCase()
-      return (
+      const matchesSearch =
+        searchQuery === "" ||
         `${alumni.firstName} ${alumni.lastName}`.toLowerCase().includes(searchLower) ||
         `${alumni.address.city}, ${alumni.address.state || alumni.address.country}`.toLowerCase().includes(searchLower) ||
         alumni.tags.some((tag) => tag.toLowerCase().includes(searchLower))
-      )
+
+      const matchesProgram = selectedProgram === "all" || alumni.programsAttended.some((p) => p.program === selectedProgram)
+
+      const matchesCountry =
+        selectedCountry === "all" ||
+        (selectedCountry === "United States"
+          ? alumni.address.country === "United States" || alumni.address.country === "USA"
+          : alumni.address.country === selectedCountry)
+
+      const matchesTags = true // selectedTags.length === 0 || selectedTags.some((tag) => alumni.tags?.includes(tag))
+
+      return matchesSearch && matchesProgram && matchesCountry && matchesTags
     })
-  }, [alumni, searchQuery])
+  }, [alumni, searchQuery, selectedProgram, selectedCountry])
 
   // Check if mobile
   useEffect(() => {
@@ -73,17 +117,22 @@ export default function AlumniMap() {
 
   // Show welcome modal for non-admin users
   useEffect(() => {
-    if (user) {
-      // Check for a flag in localStorage to see if the modal has been shown in this session
-      const welcomeModalShown = sessionStorage.getItem("welcomeModalShown")
+    if (isLoaded && user) {
       const userRole = user.publicMetadata?.role as string | undefined
+      setIsAdmin(userRole === "admin")
+      const fromRegister = searchParams.get("from_register")
 
-      if (!welcomeModalShown && userRole !== "admin") {
+      if (userRole !== "admin") {
         setShowWelcomeModal(true)
-        sessionStorage.setItem("welcomeModalShown", "true")
+        if (fromRegister === "true") {
+          setShowTutorial(true)
+          // Clean up the URL
+          const newUrl = window.location.pathname
+          window.history.replaceState({}, document.title, newUrl)
+        }
       }
     }
-  }, [user])
+  }, [isLoaded, user, searchParams])
 
   // Dynamically load Mapbox GL JS & its CSS
   useEffect(() => {
@@ -127,6 +176,7 @@ export default function AlumniMap() {
             id: alumni.id.toString(),
             firstName: alumni.firstName,
             lastName: alumni.lastName,
+            imageUrl: alumni.imageUrl,
             location: `${alumni.address.city}, ${alumni.address.state || alumni.address.country}`,
             program: alumni.programsAttended[0]?.program || "Dell'Arte Alumni",
           },
@@ -179,7 +229,7 @@ export default function AlumniMap() {
     // Add markers to map
     for (const feature of geojson.features) {
       const el = document.createElement("div")
-      const initials = `${feature.properties.firstName.charAt(0)}${feature.properties.lastName.charAt(0)}`
+      const imageUrl = feature.properties.imageUrl
 
       el.style.cssText = `
         width: 50px;
@@ -188,7 +238,8 @@ export default function AlumniMap() {
         border: 3px solid white;
         box-shadow: 0 2px 8px rgba(0,0,0,0.3);
         cursor: pointer;
-        background: linear-gradient(135deg, #dc2626, #b91c1c);
+        background-size: cover;
+        background-position: center;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -196,7 +247,14 @@ export default function AlumniMap() {
         font-weight: bold;
         font-size: 14px;
       `
-      el.textContent = initials
+
+      if (imageUrl) {
+        el.style.backgroundImage = `url(${imageUrl})`
+      } else {
+        const initials = `${feature.properties.firstName.charAt(0)}${feature.properties.lastName.charAt(0)}`
+        el.style.background = `linear-gradient(135deg, #dc2626, #b91c1c)`
+        el.textContent = initials
+      }
 
       el.addEventListener("click", () => {
         const clickedAlumni = alumni.find((a) => a.id.toString() === feature.properties.id)
@@ -431,52 +489,98 @@ export default function AlumniMap() {
                   }`}
                 >
                   <div className="flex items-center justify-between">
-                    <div className="relative flex-1 mr-4">
-                      <Input
-                        ref={searchInputRef}
-                        placeholder="Search for Alumni"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        onFocus={() => setSearchFocused(true)}
-                        onBlur={() => setSearchFocused(false)}
-                        className="pl-10"
-                      />
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                    </div>
-                  </div>
-                  {searchFocused && (
-                    <div className="mt-4 flex-1 overflow-y-auto">
-                      <h3 className="text-sm font-medium text-gray-700 mb-3">
-                        Users of the network ({filteredAlumni.length})
-                      </h3>
-                      <div className="space-y-3 px-1">
-                        {filteredAlumni.map((alumni) => (
-                          <Card
-                            key={alumni.id}
-                            className={`cursor-pointer transition-all hover:shadow-md ${
-                              selectedAlumniId === alumni.id.toString() ? "ring-2 ring-blue-500 bg-blue-50" : ""
-                            }`}
-                            onClick={() => handleAlumniClick(alumni)}
-                          >
-                            <CardContent className="p-3">
-                              <div className="flex items-center space-x-3">
-                                <Avatar className="h-10 w-10">
-                                  <AvatarFallback className="text-sm bg-red-100 text-red-700">
-                                    {getInitials(alumni.firstName, alumni.lastName)}
-                                  </AvatarFallback>
-                                </Avatar>
-                                <div className="flex-1 min-w-0">
-                                  <p className="font-medium text-gray-900 text-sm">
-                                    {alumni.firstName} {alumni.lastName}
-                                  </p>
-                                  <p className="text-xs text-gray-500 truncate">{getLocation(alumni)}</p>
-                                </div>
-                              </div>
-                            </CardContent>
-                          </Card>
-                        ))}
+                                          <div className="relative flex-1 mr-4">
+                        <Input
+                          ref={searchInputRef}
+                          placeholder="Search for Alumni"
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          onFocus={() => setSearchFocused(true)}
+                          onBlur={() => setSearchFocused(false)}
+                          className="pl-10"
+                        />
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                       </div>
                     </div>
+                    {searchFocused && (
+                      <div className="mt-4 flex-1 overflow-y-auto">
+                        <div className="grid grid-cols-2 gap-2 mb-4">
+                          <Select value={selectedProgram} onValueChange={setSelectedProgram}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="All Programs" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="all">All Programs</SelectItem>
+                              {uniquePrograms.map((p) => (
+                                <SelectItem key={p} value={p}>
+                                  {p}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <Select value={selectedCountry} onValueChange={setSelectedCountry}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="All Countries" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="all">All Countries</SelectItem>
+                              {uniqueCountries.map((c) => (
+                                <SelectItem key={c} value={c}>
+                                  {c}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        {(selectedProgram !== "all" || selectedCountry !== "all") && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="w-full mb-4"
+                            onClick={() => {
+                              setSelectedProgram("all")
+                              setSelectedCountry("all")
+                            }}
+                          >
+                            Clear Filters
+                          </Button>
+                        )}
+                        <h3 className="text-sm font-medium text-gray-700 mb-3">
+                          Users of the network ({filteredAlumni.length})
+                        </h3>
+                        <div className="space-y-3 px-1">
+                          {filteredAlumni.map((alumni) => (
+                            <Card
+                              key={alumni.id}
+                              className={`cursor-pointer transition-all hover:shadow-md ${
+                                selectedAlumniId === alumni.id.toString() ? "ring-2 ring-blue-500 bg-blue-50" : ""
+                              }`}
+                              onClick={() => handleAlumniClick(alumni)}
+                            >
+                              <CardContent className="p-3">
+                                <div className="flex items-center space-x-3">
+                                  <Avatar className="h-10 w-10">
+                                    <AvatarImage
+                                      src={alumni.imageUrl}
+                                      alt={`${alumni.firstName} ${alumni.lastName}`}
+                                      className="object-cover"
+                                    />
+                                    <AvatarFallback className="text-sm bg-red-100 text-red-700">
+                                      {getInitials(alumni.firstName, alumni.lastName)}
+                                    </AvatarFallback>
+                                  </Avatar>
+                                  <div className="flex-1 min-w-0">
+                                    <p className="font-medium text-gray-900 text-sm">
+                                      {alumni.firstName} {alumni.lastName}
+                                    </p>
+                                    <p className="text-xs text-gray-500 truncate">{getLocation(alumni)}</p>
+                                  </div>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          ))}
+                        </div>
+                      </div>
                   )}
                   <Button variant="ghost" size="sm" className="w-full mt-2" onClick={() => setSidebarExpanded(true)}>
                     <ChevronUp className="h-4 w-4" />
@@ -522,6 +626,23 @@ export default function AlumniMap() {
                     {viewMode === "list" ? (
                       /* Users Section */
                       <div>
+                        <Button
+                          variant="outline"
+                          className="w-full mb-4"
+                          onClick={() => setShowFilterModal(true)}
+                        >
+                          <Filter className="h-4 w-4 mr-2" />
+                          Filters
+                          {(selectedProgram !== "all" || selectedCountry !== "all") && (
+                            <Badge className="ml-2">
+                              {
+                                [selectedProgram, selectedCountry].filter(
+                                  (f) => f !== "all" && f
+                                ).length
+                              }
+                            </Badge>
+                          )}
+                        </Button>
                         <h3 className="text-sm font-medium text-gray-700 mb-3">
                           Users of the network ({filteredAlumni.length})
                         </h3>
@@ -537,6 +658,11 @@ export default function AlumniMap() {
                               <CardContent className="p-3">
                                 <div className="flex items-center space-x-3">
                                   <Avatar className="h-10 w-10">
+                                    <AvatarImage
+                                      src={alumni.imageUrl}
+                                      alt={`${alumni.firstName} ${alumni.lastName}`}
+                                      className="object-cover"
+                                    />
                                     <AvatarFallback className="text-sm bg-red-100 text-red-700">
                                       {getInitials(alumni.firstName, alumni.lastName)}
                                     </AvatarFallback>
@@ -559,6 +685,11 @@ export default function AlumniMap() {
                         <div className="space-y-3">
                           <div className="flex items-center space-x-3">
                             <Avatar className="h-14 w-14">
+                              <AvatarImage
+                                src={selectedAlumni.imageUrl}
+                                alt={`${selectedAlumni.firstName} ${selectedAlumni.lastName}`}
+                                className="object-cover"
+                              />
                               <AvatarFallback className="text-lg bg-red-100 text-red-700">
                                 {getInitials(selectedAlumni.firstName, selectedAlumni.lastName)}
                               </AvatarFallback>
@@ -574,6 +705,23 @@ export default function AlumniMap() {
                               <p className="text-sm text-gray-500">{getLastActive(selectedAlumni)}</p>
                             </div>
                           </div>
+
+                          {isAdmin && (
+                            <Badge
+                              variant={
+                                selectedAlumni.profilePrivacy === "public"
+                                  ? "outline"
+                                  : selectedAlumni.profilePrivacy === "alumni-only"
+                                  ? "secondary"
+                                  : "destructive"
+                              }
+                            >
+                              {selectedAlumni.profilePrivacy === "public" && <Globe className="h-3 w-3 mr-1" />}
+                              {selectedAlumni.profilePrivacy === "alumni-only" && <Users className="h-3 w-3 mr-1" />}
+                              {selectedAlumni.profilePrivacy === "private" && <Lock className="h-3 w-3 mr-1" />}
+                              <span className="capitalize">{selectedAlumni.profilePrivacy.replace("-", " ")}</span>
+                            </Badge>
+                          )}
 
                           <div className="space-y-2 text-sm">
                             {selectedAlumni?.currentWork?.title && (
@@ -692,15 +840,29 @@ export default function AlumniMap() {
                     <h2 className="font-medium text-gray-800">Profile Details</h2>
                   </div>
                 ) : (
-                  <div className="relative">
-                    <Input
-                      ref={searchInputRef}
-                      placeholder="Search for Alumni"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="pl-10"
-                    />
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                  <div className="flex items-center space-x-2">
+                    <div className="relative flex-1">
+                      <Input
+                        ref={searchInputRef}
+                        placeholder="Search for Alumni"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="pl-10"
+                      />
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                    </div>
+                    <Button variant="outline" onClick={() => setShowFilterModal(true)}>
+                      <Filter className="h-4 w-4 mr-2" />
+                      Filters
+                      {(selectedProgram !== "all" || selectedCountry !== "all") && (
+                        <Badge className="ml-2">
+                          {
+                            [selectedProgram, selectedCountry].filter((f) => f !== "all" && f)
+                              .length
+                          }
+                        </Badge>
+                      )}
+                    </Button>
                   </div>
                 )}
               </div>
@@ -725,6 +887,11 @@ export default function AlumniMap() {
                           <CardContent className="p-3">
                             <div className="flex items-center space-x-3">
                               <Avatar className="h-10 w-10">
+                                <AvatarImage
+                                  src={alumni.imageUrl}
+                                  alt={`${alumni.firstName} ${alumni.lastName}`}
+                                  className="object-cover"
+                                />
                                 <AvatarFallback className="text-sm bg-red-100 text-red-700">
                                   {getInitials(alumni.firstName, alumni.lastName)}
                                 </AvatarFallback>
@@ -747,6 +914,11 @@ export default function AlumniMap() {
                     <div className="space-y-4">
                       <div className="flex items-center space-x-4">
                         <Avatar className="h-16 w-16">
+                          <AvatarImage
+                            src={selectedAlumni.imageUrl}
+                            alt={`${selectedAlumni.firstName} ${selectedAlumni.lastName}`}
+                            className="object-cover"
+                          />
                           <AvatarFallback className="text-xl bg-red-100 text-red-700">
                             {getInitials(selectedAlumni.firstName, selectedAlumni.lastName)}
                           </AvatarFallback>
@@ -762,6 +934,25 @@ export default function AlumniMap() {
                           <p className="text-xs text-gray-500">{getLastActive(selectedAlumni)}</p>
                         </div>
                       </div>
+
+                      {isAdmin && (
+                        <div>
+                          <Badge
+                            variant={
+                              selectedAlumni.profilePrivacy === "public"
+                                ? "outline"
+                                : selectedAlumni.profilePrivacy === "alumni-only"
+                                ? "secondary"
+                                : "destructive"
+                            }
+                          >
+                            {selectedAlumni.profilePrivacy === "public" && <Globe className="h-3 w-3 mr-1" />}
+                            {selectedAlumni.profilePrivacy === "alumni-only" && <Users className="h-3 w-3 mr-1" />}
+                            {selectedAlumni.profilePrivacy === "private" && <Lock className="h-3 w-3 mr-1" />}
+                            <span className="capitalize">{selectedAlumni.profilePrivacy.replace("-", " ")}</span>
+                          </Badge>
+                        </div>
+                      )}
 
                       <div className="space-y-3 text-sm">
                         {selectedAlumni?.currentWork?.title && (
@@ -841,37 +1032,57 @@ export default function AlumniMap() {
       <Dialog open={showWelcomeModal} onOpenChange={setShowWelcomeModal}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="text-center text-xl">Welcome, {user?.firstName}! 🎭</DialogTitle>
+            <DialogTitle className="text-center text-xl">Welcome! 🎭</DialogTitle>
           </DialogHeader>
-          <div className="space-y-3">
-            <p className="text-center text-gray-600 mb-6">Ready to connect with the Dell'Arte community?</p>
-
-            <Button
-              onClick={handleSearchFocus}
-              className="w-full flex items-center justify-center space-x-2 bg-red-600 hover:bg-red-700"
-            >
-              <Search className="h-4 w-4" />
-              <span>Search for Alumni</span>
-            </Button>
-
-            <Button
-              onClick={handleUpdateProfile}
-              variant="outline"
-              className="w-full flex items-center justify-center space-x-2 bg-transparent"
-            >
-              <LucideUser className="h-4 w-4" />
-              <span>Update Profile</span>
-            </Button>
-
-            <Button
-              onClick={handleReferral}
-              variant="outline"
-              className="w-full flex items-center justify-center space-x-2 bg-transparent"
-            >
-              <Share2 className="h-4 w-4" />
-              <span>Refer a Friend</span>
-            </Button>
-          </div>
+          {showTutorial ? (
+            <div className="space-y-4 text-center">
+              <p className="text-gray-600">Here’s a quick guide to get you started:</p>
+              <ul className="list-disc list-inside text-left space-y-2">
+                <li>
+                  <strong>Explore the Map:</strong> Discover and connect with fellow alumni around the world.
+                </li>
+                <li>
+                  <strong>Use the Directory:</strong> Search for specific alumni, filter by program, and view profiles.
+                </li>
+                <li>
+                  <strong>Complete Your Profile:</strong> Add your professional details to get the most out of the network.
+                </li>
+              </ul>
+              <Button
+                onClick={() => router.push("/alumni/profile")}
+                className="w-full bg-red-600 hover:bg-red-700"
+              >
+                Complete Your Profile
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <p className="text-center text-gray-600 mb-6">Ready to connect with the Dell'Arte community?</p>
+              <Button
+                onClick={handleSearchFocus}
+                className="w-full flex items-center justify-center space-x-2 bg-red-600 hover:bg-red-700"
+              >
+                <Search className="h-4 w-4" />
+                <span>Search for Alumni</span>
+              </Button>
+              <Button
+                onClick={handleUpdateProfile}
+                variant="outline"
+                className="w-full flex items-center justify-center space-x-2 bg-transparent"
+              >
+                <LucideUser className="h-4 w-4" />
+                <span>Update Profile</span>
+              </Button>
+              <Button
+                onClick={handleReferral}
+                variant="outline"
+                className="w-full flex items-center justify-center space-x-2 bg-transparent"
+              >
+                <Share2 className="h-4 w-4" />
+                <span>Refer a Friend</span>
+              </Button>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
 
@@ -980,6 +1191,65 @@ export default function AlumniMap() {
           </div>
         </DialogContent>
       </Dialog>
-    </div>
-  )
-}
+
+      {/* Filter Modal */}
+      <Dialog open={showFilterModal} onOpenChange={setShowFilterModal}>
+        <DialogContent onInteractOutside={(e) => {
+          if (isTagPopoverOpen) {
+            e.preventDefault();
+          }
+        }}>
+          <DialogHeader>
+            <DialogTitle>Filter Alumni</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Filter by Program</label>
+              <Select value={selectedProgram} onValueChange={setSelectedProgram}>
+                <SelectTrigger>
+                  <SelectValue placeholder="All Programs" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Programs</SelectItem>
+                  {uniquePrograms.map((p) => (
+                    <SelectItem key={p} value={p}>
+                      {p}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Filter by Country</label>
+              <Select value={selectedCountry} onValueChange={setSelectedCountry}>
+                <SelectTrigger>
+                  <SelectValue placeholder="All Countries" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Countries</SelectItem>
+                  {uniqueCountries.map((c) => (
+                    <SelectItem key={c} value={c}>
+                      {c}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-full mt-4"
+                onClick={() => {
+                  setSelectedProgram("all")
+                  setSelectedCountry("all")
+                  setSelectedTags([])
+                }}
+              >
+                Clear All Filters
+              </Button>
+            </DialogContent>
+          </Dialog>
+        </div>
+      )
+    }

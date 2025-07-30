@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useUser } from "@clerk/nextjs"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -9,11 +9,18 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { LucideUser, Briefcase, Save, Eye, UploadCloud } from "lucide-react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import AddressAutofill from "@/components/ui/address-autofill"
+import ReactCrop, { type Crop } from "react-image-crop"
+import "react-image-crop/dist/ReactCrop.css"
+import { z } from "zod"
+import Link from "next/link"
+
+const phoneSchema = z.string().regex(/^\d+$/, "Phone number must contain only digits")
+const emailSchema = z.string().email("Invalid email address")
 
 interface ProfileData {
   firstName: string
@@ -32,6 +39,9 @@ interface ProfileData {
   currentRole: string
   currentOrganization: string
   websiteUrl: string
+  linkedinUrl?: string
+  instagramUrl?: string
+  youtubeUrl?: string
   professionalTags: string[]
   dellArteRoles: string[]
   profileVisibility: string
@@ -94,6 +104,10 @@ export default function AlumniProfile() {
   const [error, setError] = useState<string | null>(null)
   const [saved, setSaved] = useState(false)
   const [showUploadModal, setShowUploadModal] = useState(false)
+  const [imgSrc, setImgSrc] = useState("")
+  const [crop, setCrop] = useState<Crop>()
+  const imgRef = useRef<HTMLImageElement>(null)
+  const [validationErrors, setValidationErrors] = useState<{ [key: string]: string | null }>({})
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -113,6 +127,9 @@ export default function AlumniProfile() {
               graduationYears: data.graduationYears || [],
               biography: data.biography || "",
               websiteUrl: data.portfolioLinks?.website || "",
+              linkedinUrl: data.portfolioLinks?.linkedin || "",
+              instagramUrl: data.portfolioLinks?.instagram || "",
+              youtubeUrl: data.portfolioLinks?.youtube || "",
               professionalTags: data.tags || [],
               dellArteRoles: data.experiencesAtDellArte || [],
               profileVisibility: data.profilePrivacy || "public",
@@ -157,6 +174,14 @@ export default function AlumniProfile() {
     else {
       setProfileData((prev) => ({ ...prev, [field]: value }))
     }
+
+    if (field === "phone") {
+      const result = phoneSchema.safeParse(value)
+      setValidationErrors((prev) => ({ ...prev, phone: result.success ? null : result.error.issues[0].message }))
+    } else if (field === "email") {
+      const result = emailSchema.safeParse(value)
+      setValidationErrors((prev) => ({ ...prev, email: result.success ? null : result.error.issues[0].message }))
+    }
   }
 
   const handleArrayChange = (field: string, value: string, checked: boolean) => {
@@ -192,14 +217,66 @@ export default function AlumniProfile() {
   }
 
   const handleImageUpload = async (file: File) => {
-    if (!user) return
+    if (!user) return false
     try {
       await user.setProfileImage({ file })
-      // Optionally, you might want to refresh the user data or show a success message
+      // Force a reload of the user object to get the new image URL
+      await user.reload()
+      return true
     } catch (error) {
       console.error("Error uploading profile image:", error)
       setError("Failed to upload profile image.")
+      return false
     }
+  }
+
+  const onSelectFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const reader = new FileReader()
+      reader.addEventListener("load", () => {
+        if (typeof reader.result === "string") {
+          setImgSrc(reader.result)
+        }
+      })
+      reader.readAsDataURL(e.target.files[0])
+    }
+  }
+
+  const getCroppedImg = (image: HTMLImageElement, crop: Crop) => {
+    return new Promise<File | null>((resolve) => {
+      const canvas = document.createElement("canvas")
+      const scaleX = image.naturalWidth / image.width
+      const scaleY = image.naturalHeight / image.height
+      canvas.width = crop.width
+      canvas.height = crop.height
+      const ctx = canvas.getContext("2d")
+
+      if (ctx) {
+        ctx.drawImage(
+          image,
+          crop.x * scaleX,
+          crop.y * scaleY,
+          crop.width * scaleX,
+          crop.height * scaleY,
+          0,
+          0,
+          crop.width,
+          crop.height
+        )
+      }
+
+      canvas.toBlob(
+        (blob) => {
+          if (!blob) {
+            resolve(null)
+            return
+          }
+          resolve(new File([blob], "newFile.jpeg", { type: "image/jpeg" }))
+        },
+        "image/jpeg",
+        1
+      )
+    })
   }
 
   const getInitials = (firstName: string, lastName: string) => {
@@ -241,6 +318,7 @@ export default function AlumniProfile() {
               <CardTitle className="flex items-center space-x-4">
                 <button onClick={() => setShowUploadModal(true)} className="relative">
                   <Avatar className="h-16 w-16 flex-shrink-0">
+                    <AvatarImage src={user?.imageUrl} alt={`${profileData.firstName} ${profileData.lastName}`} />
                     <AvatarFallback className="bg-red-100 text-red-700 text-xl">
                       {getInitials(profileData.firstName || "U", profileData.lastName || "U")}
                     </AvatarFallback>
@@ -297,6 +375,14 @@ export default function AlumniProfile() {
                     value={profileData.email}
                     onChange={(e) => handleInputChange("email", e.target.value)}
                   />
+                  {validationErrors.email && <p className="text-sm text-red-600 mt-1">{validationErrors.email}</p>}
+                  <p className="text-xs text-gray-500 mt-1">
+                    This is your public email for others to contact you. To change your sign-in email, go to{" "}
+                    <Link href="/account" className="text-blue-600 hover:underline">
+                      Account Settings
+                    </Link>
+                    .
+                  </p>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="phone">Phone</Label>
@@ -306,6 +392,7 @@ export default function AlumniProfile() {
                     onChange={(e) => handleInputChange("phone", e.target.value)}
                     placeholder="(555) 123-4567"
                   />
+                  {validationErrors.phone && <p className="text-sm text-red-600 mt-1">{validationErrors.phone}</p>}
                 </div>
               </div>
 
@@ -414,6 +501,34 @@ export default function AlumniProfile() {
                 />
               </div>
 
+              <div className="space-y-2">
+                <Label htmlFor="linkedinUrl">LinkedIn Profile</Label>
+                <Input
+                  id="linkedinUrl"
+                  placeholder="https://linkedin.com/in/yourprofile"
+                  value={profileData.linkedinUrl || ""}
+                  onChange={(e) => handleInputChange("linkedinUrl", e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="instagramUrl">Instagram Profile</Label>
+                <Input
+                  id="instagramUrl"
+                  placeholder="https://instagram.com/yourprofile"
+                  value={profileData.instagramUrl || ""}
+                  onChange={(e) => handleInputChange("instagramUrl", e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="youtubeUrl">YouTube Channel</Label>
+                <Input
+                  id="youtubeUrl"
+                  placeholder="https://youtube.com/c/yourchannel"
+                  value={profileData.youtubeUrl || ""}
+                  onChange={(e) => handleInputChange("youtubeUrl", e.target.value)}
+                />
+              </div>
+
               <div className="space-y-4">
                 <Label>Professional Focus Areas</Label>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
@@ -496,7 +611,11 @@ export default function AlumniProfile() {
 
           {/* Save Button */}
           <div className="flex justify-end">
-            <Button onClick={handleSave} disabled={loading} className="bg-red-600 hover:bg-red-700">
+            <Button
+              onClick={handleSave}
+              disabled={loading || !!validationErrors.phone || !!validationErrors.email}
+              className="bg-red-600 hover:bg-red-700"
+            >
               <Save className="h-4 w-4 mr-2" />
               {loading ? "Saving..." : "Save Profile"}
             </Button>
@@ -509,7 +628,7 @@ export default function AlumniProfile() {
           <DialogHeader>
             <DialogTitle>Upload Profile Picture</DialogTitle>
             <DialogDescription>
-              Select a new image to use as your profile picture.
+              Select and crop a new image to use as your profile picture.
             </DialogDescription>
           </DialogHeader>
           <div className="p-6">
@@ -518,25 +637,48 @@ export default function AlumniProfile() {
               accept="image/*"
               id="profile-image-upload"
               className="hidden"
-              onChange={(e) => {
-                const file = e.target.files?.[0]
-                if (file) {
-                  handleImageUpload(file)
-                  setShowUploadModal(false)
-                }
-              }}
+              onChange={onSelectFile}
             />
-            <label
-              htmlFor="profile-image-upload"
-              className="cursor-pointer flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-lg p-12 text-center hover:bg-gray-50"
-            >
-              <UploadCloud className="h-12 w-12 text-gray-400 mb-4" />
-              <p className="text-lg font-medium">Click to upload</p>
-              <p className="text-sm text-gray-600">or drag and drop an image</p>
-            </label>
+            {imgSrc ? (
+              <div className="flex flex-col items-center">
+                <ReactCrop crop={crop} onChange={c => setCrop(c)} aspect={1} circularCrop>
+                  <img ref={imgRef} src={imgSrc} style={{ maxHeight: "400px" }} />
+                </ReactCrop>
+                <Button
+                  onClick={async () => {
+                    if (crop?.width && crop?.height && imgRef.current) {
+                      const croppedImage = await getCroppedImg(imgRef.current, crop)
+                      if (croppedImage) {
+                        const uploadSuccess = await handleImageUpload(croppedImage)
+                        if (uploadSuccess) {
+                          await handleSave()
+                        }
+                        setShowUploadModal(false)
+                        setImgSrc("")
+                      }
+                    }
+                  }}
+                  className="mt-4"
+                >
+                  Save Cropped Image
+                </Button>
+              </div>
+            ) : (
+              <label
+                htmlFor="profile-image-upload"
+                className="cursor-pointer flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-lg p-12 text-center hover:bg-gray-50"
+              >
+                <UploadCloud className="h-12 w-12 text-gray-400 mb-4" />
+                <p className="text-lg font-medium">Click to upload</p>
+                <p className="text-sm text-gray-600">or drag and drop an image</p>
+              </label>
+            )}
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowUploadModal(false)}>
+            <Button variant="outline" onClick={() => {
+              setShowUploadModal(false)
+              setImgSrc("")
+            }}>
               Cancel
             </Button>
           </DialogFooter>

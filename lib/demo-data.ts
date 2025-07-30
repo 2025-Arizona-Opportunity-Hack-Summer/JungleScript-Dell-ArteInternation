@@ -7,6 +7,7 @@ export const demoAlumni: AlumniProfile[] = [
     lastName: "Rodriguez",
     email: "maria.rodriguez@email.com",
     phone: "+1-555-0123",
+    imageUrl: "https://i.pravatar.cc/150?u=maria-rodriguez",
     address: {
       street: "123 Theatre St",
       city: "San Francisco",
@@ -49,6 +50,7 @@ export const demoAlumni: AlumniProfile[] = [
     lastName: "Chen",
     email: "james.chen@email.com",
     phone: "+1-555-0124",
+    imageUrl: "https://i.pravatar.cc/150?u=james-chen",
     address: {
       street: "456 Performance Ave",
       city: "Portland",
@@ -91,6 +93,7 @@ export const demoAlumni: AlumniProfile[] = [
     lastName: "Thompson",
     email: "sarah.thompson@email.com",
     phone: "+1-555-0125",
+    imageUrl: "https://i.pravatar.cc/150?u=sarah-thompson",
     address: {
       street: "789 Clown Blvd",
       city: "Austin",
@@ -133,6 +136,7 @@ export const demoAlumni: AlumniProfile[] = [
     lastName: "Bianchi",
     email: "alessandro.bianchi@email.com",
     phone: "+39-123-456-789",
+    imageUrl: "https://i.pravatar.cc/150?u=alessandro-bianchi",
     address: {
       street: "Via del Teatro 15",
       city: "Florence",
@@ -175,6 +179,7 @@ export const demoAlumni: AlumniProfile[] = [
     lastName: "Crow Feather",
     email: "aiyana.crowfeather@email.com",
     phone: "+1-555-0126",
+    imageUrl: "https://i.pravatar.cc/150?u=aiyana-crowfeather",
     address: {
       street: "321 Sacred Way",
       city: "Santa Fe",

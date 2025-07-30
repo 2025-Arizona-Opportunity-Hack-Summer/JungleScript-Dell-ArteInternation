@@ -10,6 +10,7 @@ export interface AlumniProfile {
   lastName: string
   email: string
   phone?: string
+  imageUrl?: string
   address: {
     street?: string
     city: string
@@ -72,20 +73,11 @@ export const useAlumniStore = create<AlumniStore>((set, get) => ({
     set({ loading: true, error: null })
 
     try {
-      if (!isSupabaseConfigured || !supabase) {
-        console.log("Supabase not configured, using demo data")
-        set({ alumni: demoAlumni, loading: false })
-        return
+      const response = await fetch("/api/alumni/map")
+      if (!response.ok) {
+        throw new Error("Failed to fetch alumni data.")
       }
-
-      console.log("Fetching alumni from Supabase...")
-      const { data, error } = await supabase.from("alumni").select("*").order("lastName", { ascending: true })
-
-      if (error) {
-        console.error("Supabase fetch error:", error)
-        throw error
-      }
-
+      const data = await response.json()
       set({ alumni: data || [], loading: false })
     } catch (error) {
       console.error("Error fetching alumni:", error)

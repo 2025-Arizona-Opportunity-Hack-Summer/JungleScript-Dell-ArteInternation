@@ -1,12 +1,12 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import type { ReactNode } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import {
   Dialog,
@@ -47,6 +47,10 @@ import {
 import { useAlumniStore, type AlumniProfile } from "@/lib/alumni-store"
 import type { ReactElement } from "react"
 import type { NextPage } from "next"
+import { z } from "zod"
+
+const phoneSchema = z.string().regex(/^\d+$/, "Phone number must contain only digits")
+const emailSchema = z.string().email("Invalid email address")
 
 const programs = [
   "MFA in Ensemble Based Physical Theatre",
@@ -123,10 +127,12 @@ const EditForm = ({
   editingAlumni,
   updateEditingAlumni,
   saveError,
+  validationErrors,
 }: {
   editingAlumni: AlumniProfile | null
   updateEditingAlumni: (field: string, value: any) => void
   saveError: string | null
+  validationErrors: { [key: string]: string | null }
 }) => {
   if (!editingAlumni) return null
 
@@ -166,6 +172,7 @@ const EditForm = ({
           value={editingAlumni.email}
           onChange={(e) => updateEditingAlumni("email", e.target.value)}
         />
+        {validationErrors.email && <p className="text-sm text-red-600 mt-1">{validationErrors.email}</p>}
       </div>
 
       <div>
@@ -175,6 +182,7 @@ const EditForm = ({
           value={editingAlumni.phone || ""}
           onChange={(e) => updateEditingAlumni("phone", e.target.value)}
         />
+        {validationErrors.phone && <p className="text-sm text-red-600 mt-1">{validationErrors.phone}</p>}
       </div>
 
       <div className="grid grid-cols-2 gap-4">
@@ -386,6 +394,7 @@ export default function AlumniManagement(): ReactNode {
 
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedProgram, setSelectedProgram] = useState<string>("all")
+  const [selectedCountry, setSelectedCountry] = useState<string>("all")
   const [selectedTags, setSelectedTags] = useState<string[]>([])
   const [currentPage, setCurrentPage] = useState(1)
   const [isMobile, setIsMobile] = useState(false)
@@ -401,6 +410,7 @@ export default function AlumniManagement(): ReactNode {
   const [originalAlumni, setOriginalAlumni] = useState<AlumniProfile | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
+  const [validationErrors, setValidationErrors] = useState<{ [key: string]: string | null }>({})
 
   const itemsPerPage = isMobile ? 6 : 12
 
@@ -420,19 +430,43 @@ export default function AlumniManagement(): ReactNode {
   }, [])
 
   // Filter alumni
-  const filteredAlumni = alumni.filter((alumni) => {
-    const matchesSearch =
-      searchQuery === "" ||
-      `${alumni.firstName} ${alumni.lastName}`.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      alumni.email.toLowerCase().includes(searchQuery.toLowerCase())
+  const { filteredAlumni, uniqueCountries } = useMemo(() => {
+    const countries = new Set<string>()
+    alumni.forEach(alum => {
+      if (alum.address?.country) {
+        if (alum.address.country === 'USA') {
+          countries.add('United States');
+        } else {
+          countries.add(alum.address.country);
+        }
+      }
+    });
 
-    const matchesProgram =
-      selectedProgram === "all" || alumni.programsAttended.some((p) => p.program === selectedProgram)
+    const filtered = alumni.filter((alumni) => {
+      const matchesSearch =
+        searchQuery === "" ||
+        `${alumni.firstName} ${alumni.lastName}`.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        alumni.email.toLowerCase().includes(searchQuery.toLowerCase())
 
-    const matchesTags = selectedTags.length === 0 || selectedTags.some((tag) => alumni.tags.includes(tag))
+      const matchesProgram =
+        selectedProgram === "all" || alumni.programsAttended.some((p) => p.program === selectedProgram)
 
-    return matchesSearch && matchesProgram && matchesTags
-  })
+      const matchesCountry =
+        selectedCountry === "all" ||
+        (selectedCountry === "United States"
+          ? alumni.address.country === "United States" || alumni.address.country === "USA"
+          : alumni.address.country === selectedCountry)
+      
+      const matchesTags = selectedTags.length === 0 || selectedTags.some((tag) => alumni.tags.includes(tag))
+
+      return matchesSearch && matchesProgram && matchesCountry && matchesTags
+    })
+
+    return {
+      filteredAlumni: filtered,
+      uniqueCountries: Array.from(countries).sort()
+    }
+  }, [alumni, searchQuery, selectedProgram, selectedCountry, selectedTags]);
 
   const totalPages = Math.ceil(filteredAlumni.length / itemsPerPage)
   const startIndex = (currentPage - 1) * itemsPerPage
@@ -650,6 +684,14 @@ export default function AlumniManagement(): ReactNode {
     } else {
       setEditingAlumni((prev) => ({ ...prev!, [field]: value }))
     }
+
+    if (field === "phone") {
+      const result = phoneSchema.safeParse(value)
+      setValidationErrors((prev) => ({ ...prev, phone: result.success ? null : result.error.issues[0].message }))
+    } else if (field === "email") {
+      const result = emailSchema.safeParse(value)
+      setValidationErrors((prev) => ({ ...prev, email: result.success ? null : result.error.issues[0].message }))
+    }
   }
 
   const AlumniCard = ({ alumni }: { alumni: AlumniProfile }) => (
@@ -658,6 +700,7 @@ export default function AlumniManagement(): ReactNode {
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3 flex-1 min-w-0">
             <Avatar className="h-12 w-12 flex-shrink-0">
+              <AvatarImage src={alumni.imageUrl} alt={`${alumni.firstName} ${alumni.lastName}`} className="object-cover" />
               <AvatarFallback className="bg-red-100 text-red-700 font-semibold">
                 {getInitials(alumni.firstName, alumni.lastName)}
               </AvatarFallback>
@@ -765,8 +808,26 @@ export default function AlumniManagement(): ReactNode {
                   </Select>
                 </div>
 
-                {/* Tags Filter */}
+                {/* Country Filter */}
                 <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Filter by Country</label>
+                  <Select value={selectedCountry} onValueChange={setSelectedCountry}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="All Countries" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Countries</SelectItem>
+                      {uniqueCountries.map((country) => (
+                        <SelectItem key={country} value={country}>
+                          {country}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Tags Filter */}
+                <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-2">Filter by Tags</label>
                   <div className="flex flex-wrap gap-2 p-2 border rounded-md">
                     {allTags.map((tag) => (
@@ -784,11 +845,12 @@ export default function AlumniManagement(): ReactNode {
               </div>
 
               {/* Active Filters Display */}
-              {(searchQuery || selectedProgram !== "all" || selectedTags.length > 0) && (
+              {(searchQuery || selectedProgram !== "all" || selectedCountry !== "all" || selectedTags.length > 0) && (
                 <div className="flex flex-wrap items-center gap-2 text-sm text-gray-600">
                   <span>Active filters:</span>
                   {searchQuery && <Badge variant="secondary">Search: "{searchQuery}"</Badge>}
                   {selectedProgram !== "all" && <Badge variant="secondary">Program: {selectedProgram}</Badge>}
+                  {selectedCountry !== "all" && <Badge variant="secondary">Country: {selectedCountry}</Badge>}
                   {selectedTags.map((tag) => (
                     <Badge key={tag} variant="secondary">
                       Tag: {tag}
@@ -800,6 +862,7 @@ export default function AlumniManagement(): ReactNode {
                     onClick={() => {
                       setSearchQuery("")
                       setSelectedProgram("all")
+                      setSelectedCountry("all")
                       setSelectedTags([])
                     }}
                   >
@@ -861,6 +924,11 @@ export default function AlumniManagement(): ReactNode {
           <DialogHeader>
             <DialogTitle className="flex items-center space-x-3">
               <Avatar className="h-12 w-12">
+                <AvatarImage
+                  src={selectedAlumni?.imageUrl}
+                  alt={`${selectedAlumni?.firstName} ${selectedAlumni?.lastName}`}
+                  className="object-cover"
+                />
                 <AvatarFallback className="bg-red-100 text-red-700 text-lg">
                   {selectedAlumni && getInitials(selectedAlumni.firstName, selectedAlumni.lastName)}
                 </AvatarFallback>
@@ -1022,12 +1090,17 @@ export default function AlumniManagement(): ReactNode {
             editingAlumni={editingAlumni}
             updateEditingAlumni={updateEditingAlumni}
             saveError={saveError}
+            validationErrors={validationErrors}
           />
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowEditModal(false)} disabled={isSubmitting}>
               Cancel
             </Button>
-            <Button onClick={saveAlumni} className="bg-red-600 hover:bg-red-700" disabled={isSubmitting}>
+            <Button
+              onClick={saveAlumni}
+              className="bg-red-600 hover:bg-red-700"
+              disabled={isSubmitting || !!validationErrors.phone || !!validationErrors.email}
+            >
               <Save className="h-4 w-4 mr-2" />
               {isSubmitting ? "Saving..." : "Save Changes"}
             </Button>
@@ -1046,12 +1119,17 @@ export default function AlumniManagement(): ReactNode {
             editingAlumni={editingAlumni}
             updateEditingAlumni={updateEditingAlumni}
             saveError={saveError}
+            validationErrors={validationErrors}
           />
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowAddModal(false)} disabled={isSubmitting}>
               Cancel
             </Button>
-            <Button onClick={saveAlumni} className="bg-red-600 hover:bg-red-700" disabled={isSubmitting}>
+            <Button
+              onClick={saveAlumni}
+              className="bg-red-600 hover:bg-red-700"
+              disabled={isSubmitting || !!validationErrors.phone || !!validationErrors.email}
+            >
               <Save className="h-4 w-4 mr-2" />
               {isSubmitting ? "Adding..." : "Add Alumni"}
             </Button>

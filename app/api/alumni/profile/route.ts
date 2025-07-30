@@ -5,7 +5,8 @@ import { supabaseAdmin } from "@/lib/supabaseAdmin"
 export async function GET() {
   try {
     const { userId } = await auth()
-    if (!userId) {
+    const user = await currentUser()
+    if (!userId || !user) {
       return new NextResponse("Unauthorized", { status: 401 })
     }
 
@@ -20,7 +21,13 @@ export async function GET() {
       return new NextResponse("Internal Server Error", { status: 500 })
     }
 
-    return NextResponse.json(data)
+    // Merge supabase data with live clerk data
+    const profileData = {
+      ...data,
+      imageUrl: user.imageUrl,
+    }
+
+    return NextResponse.json(profileData)
   } catch (error) {
     console.error("[ALUMNI_PROFILE_GET]", error)
     return new NextResponse("Internal Server Error", { status: 500 })
@@ -53,6 +60,9 @@ export async function POST(req: Request) {
       lastName,
       biography,
       websiteUrl,
+      linkedinUrl,
+      instagramUrl,
+      youtubeUrl,
       professionalTags,
       dellArteRoles,
       profileVisibility,
@@ -83,6 +93,7 @@ export async function POST(req: Request) {
     // Map frontend data to the database schema
     const profileData = {
       clerkUserId: userId,
+      imageUrl: user.imageUrl,
       firstName: firstName || user.firstName,
       lastName: lastName || user.lastName,
       email: email,
@@ -97,6 +108,9 @@ export async function POST(req: Request) {
       tags: professionalTags, // maps `professionalTags` to `tags`
       portfolioLinks: {
         website: websiteUrl,
+        linkedin: linkedinUrl,
+        instagram: instagramUrl,
+        youtube: youtubeUrl,
       },
       experiencesAtDellArte: dellArteRoles, // maps `dellArteRoles` to `experiencesAtDellArte`
       profilePrivacy: profileVisibility, // maps `profileVisibility` to `profilePrivacy`
