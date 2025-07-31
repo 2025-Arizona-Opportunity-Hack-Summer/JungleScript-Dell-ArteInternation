@@ -429,6 +429,11 @@ export default function AlumniManagement(): ReactNode {
     return () => window.removeEventListener("resize", checkMobile)
   }, [])
 
+  // Reset to the first page on any filter change
+  useEffect(() => {
+    setCurrentPage(1); 
+  }, [searchQuery, selectedProgram, selectedCountry, selectedTags]);
+
   // Filter alumni
   const { filteredAlumni, uniqueCountries } = useMemo(() => {
     const countries = new Set<string>()
