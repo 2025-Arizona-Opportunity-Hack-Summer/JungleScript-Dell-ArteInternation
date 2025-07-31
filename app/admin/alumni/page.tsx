@@ -456,8 +456,10 @@ export default function AlumniManagement(): ReactNode {
         (selectedCountry === "United States"
           ? alumni.address.country === "United States" || alumni.address.country === "USA"
           : alumni.address.country === selectedCountry)
+
       
-      const matchesTags = selectedTags.length === 0 || selectedTags.some((tag) => alumni.tags.includes(tag))
+      const lowercasedAlumniTags = alumni.tags.map(t => t.toLowerCase());
+      const matchesTags = selectedTags.length === 0 || selectedTags.some((tag) => lowercasedAlumniTags.includes(tag.toLowerCase()));
 
       return matchesSearch && matchesProgram && matchesCountry && matchesTags
     })
