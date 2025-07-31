@@ -1243,7 +1243,6 @@ export default function AlumniMap() {
                 onClick={() => {
                   setSelectedProgram("all")
                   setSelectedCountry("all")
-                  setSelectedTags([])
                 }}
               >
                 Clear All Filters

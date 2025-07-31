@@ -392,9 +392,10 @@ const EditForm = ({
 export default function AlumniManagement(): ReactNode {
   const { alumni, loading, error, addAlumni, updateAlumni, deleteAlumni, fetchAlumni } = useAlumniStore()
 
-  const [searchQuery, setSearchQuery] = useState("")
+    const [searchQuery, setSearchQuery] = useState("")
   const [selectedProgram, setSelectedProgram] = useState<string>("all")
   const [selectedCountry, setSelectedCountry] = useState<string>("all")
+  const [selectedAccountStatus, setSelectedAccountStatus] = useState<string>("all")
   const [selectedTags, setSelectedTags] = useState<string[]>([])
   const [currentPage, setCurrentPage] = useState(1)
   const [isMobile, setIsMobile] = useState(false)
@@ -430,9 +431,9 @@ export default function AlumniManagement(): ReactNode {
   }, [])
 
   // Reset to the first page on any filter change
-  useEffect(() => {
+    useEffect(() => {
     setCurrentPage(1); 
-  }, [searchQuery, selectedProgram, selectedCountry, selectedTags]);
+  }, [searchQuery, selectedProgram, selectedCountry, selectedTags, selectedAccountStatus]);
 
   // Filter alumni
   const { filteredAlumni, uniqueCountries } = useMemo(() => {
@@ -463,17 +464,22 @@ export default function AlumniManagement(): ReactNode {
           : alumni.address.country === selectedCountry)
 
       
-      const lowercasedAlumniTags = alumni.tags.map(t => t.toLowerCase());
+            const lowercasedAlumniTags = alumni.tags.map(t => t.toLowerCase());
       const matchesTags = selectedTags.length === 0 || selectedTags.some((tag) => lowercasedAlumniTags.includes(tag.toLowerCase()));
 
-      return matchesSearch && matchesProgram && matchesCountry && matchesTags
+      const matchesAccountStatus =
+        selectedAccountStatus === "all" ||
+        (selectedAccountStatus === "hasAccount" && alumni.clerkUserId) ||
+        (selectedAccountStatus === "noAccount" && !alumni.clerkUserId)
+
+      return matchesSearch && matchesProgram && matchesCountry && matchesTags && matchesAccountStatus
     })
 
     return {
       filteredAlumni: filtered,
       uniqueCountries: Array.from(countries).sort()
     }
-  }, [alumni, searchQuery, selectedProgram, selectedCountry, selectedTags]);
+  }, [alumni, searchQuery, selectedProgram, selectedCountry, selectedTags, selectedAccountStatus]);
 
   const totalPages = Math.ceil(filteredAlumni.length / itemsPerPage)
   const startIndex = (currentPage - 1) * itemsPerPage
@@ -796,7 +802,7 @@ export default function AlumniManagement(): ReactNode {
                 />
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {/* Program Filter */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Filter by Program</label>
@@ -811,6 +817,21 @@ export default function AlumniManagement(): ReactNode {
                           {program}
                         </SelectItem>
                       ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Account Status Filter */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Account Status</label>
+                  <Select value={selectedAccountStatus} onValueChange={setSelectedAccountStatus}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="All Statuses" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Statuses</SelectItem>
+                      <SelectItem value="hasAccount">Has Account</SelectItem>
+                      <SelectItem value="noAccount">No Account</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -851,13 +872,15 @@ export default function AlumniManagement(): ReactNode {
                 </div>
               </div>
 
-              {/* Active Filters Display */}
-              {(searchQuery || selectedProgram !== "all" || selectedCountry !== "all" || selectedTags.length > 0) && (
+                            {/* Active Filters Display */}
+              {(searchQuery || selectedProgram !== "all" || selectedCountry !== "all" || selectedTags.length > 0 || selectedAccountStatus !== "all") && (
                 <div className="flex flex-wrap items-center gap-2 text-sm text-gray-600">
                   <span>Active filters:</span>
                   {searchQuery && <Badge variant="secondary">Search: "{searchQuery}"</Badge>}
                   {selectedProgram !== "all" && <Badge variant="secondary">Program: {selectedProgram}</Badge>}
                   {selectedCountry !== "all" && <Badge variant="secondary">Country: {selectedCountry}</Badge>}
+                  {selectedAccountStatus === "hasAccount" && <Badge variant="secondary">Status: Has Account</Badge>}
+                  {selectedAccountStatus === "noAccount" && <Badge variant="secondary">Status: No Account</Badge>}
                   {selectedTags.map((tag) => (
                     <Badge key={tag} variant="secondary">
                       Tag: {tag}
@@ -871,6 +894,7 @@ export default function AlumniManagement(): ReactNode {
                       setSelectedProgram("all")
                       setSelectedCountry("all")
                       setSelectedTags([])
+                      setSelectedAccountStatus("all")
                     }}
                   >
                     Clear all

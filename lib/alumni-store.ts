@@ -9,7 +9,8 @@ export interface AlumniProfile {
   firstName: string
   lastName: string
   email: string
-  phone?: string
+    phone?: string
+  clerkUserId?: string
   imageUrl?: string
   address: {
     street?: string
@@ -102,7 +103,8 @@ export const useAlumniStore = create<AlumniStore>((set, get) => ({
         return
       }
 
-      const { data, error } = await supabase.from("alumni").insert([newAlumni]).select().single()
+            const { id, ...alumniData } = newAlumni as AlumniProfile
+      const { data, error } = await supabase.from("alumni").insert(alumniData).select().single()
 
       if (error) {
         throw error

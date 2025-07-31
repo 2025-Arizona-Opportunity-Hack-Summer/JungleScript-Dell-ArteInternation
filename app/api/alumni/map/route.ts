@@ -6,7 +6,7 @@ export async function GET() {
   try {
     const { userId, sessionClaims } = await auth()
 
-    let query = supabaseAdmin.from("alumni").select("id, firstName, lastName, email, phone, address, programsAttended, currentWork, biography, tags, portfolioLinks, lastUpdated, profilePrivacy, imageUrl")
+    let query = supabaseAdmin.from("alumni").select("id, firstName, lastName, email, phone, address, programsAttended, currentWork, biography, tags, portfolioLinks, lastUpdated, profilePrivacy, imageUrl, clerkUserId")
 
     const userRole = sessionClaims?.metadata?.role
     
