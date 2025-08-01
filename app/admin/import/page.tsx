@@ -245,7 +245,7 @@ export default function DataImport() {
                 <Button
                   onClick={handleValidateAndPreview}
                   disabled={isValidating}
-                  className="bg-red-600 hover:bg-red-700"
+                  className="bg-primary hover:bg-primary/90"
                 >
                   {isValidating ? "Validating..." : "Validate & Preview"}
                 </Button>

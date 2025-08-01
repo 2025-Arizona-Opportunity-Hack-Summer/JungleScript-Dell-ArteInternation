@@ -244,7 +244,7 @@ export default function Communications() {
                     </Button>
 
                     <Button
-                      className="w-full bg-red-600 hover:bg-red-700"
+                      className="w-full bg-primary hover:bg-primary/90"
                       onClick={handleSendBulk}
                       disabled={isSendingBulk || !subject || !emailBody || recipientCount === 0}
                     >

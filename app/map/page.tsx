@@ -252,7 +252,7 @@ export default function AlumniMap() {
         el.style.backgroundImage = `url(${imageUrl})`
       } else {
         const initials = `${feature.properties.firstName.charAt(0)}${feature.properties.lastName.charAt(0)}`
-        el.style.background = `linear-gradient(135deg, #dc2626, #b91c1c)`
+        el.style.background = `linear-gradient(135deg, #6A2390, #4C1E66)`
         el.textContent = initials
       }
 
@@ -565,7 +565,7 @@ export default function AlumniMap() {
                                       alt={`${alumni.firstName} ${alumni.lastName}`}
                                       className="object-cover"
                                     />
-                                    <AvatarFallback className="text-sm bg-red-100 text-red-700">
+                                    <AvatarFallback className="text-sm bg-primary-100 text-primary-600">
                                       {getInitials(alumni.firstName, alumni.lastName)}
                                     </AvatarFallback>
                                   </Avatar>
@@ -663,7 +663,7 @@ export default function AlumniMap() {
                                       alt={`${alumni.firstName} ${alumni.lastName}`}
                                       className="object-cover"
                                     />
-                                    <AvatarFallback className="text-sm bg-red-100 text-red-700">
+                                    <AvatarFallback className="text-sm bg-primary-100 text-primary-600">
                                       {getInitials(alumni.firstName, alumni.lastName)}
                                     </AvatarFallback>
                                   </Avatar>
@@ -892,7 +892,7 @@ export default function AlumniMap() {
                                   alt={`${alumni.firstName} ${alumni.lastName}`}
                                   className="object-cover"
                                 />
-                                <AvatarFallback className="text-sm bg-red-100 text-red-700">
+                                <AvatarFallback className="text-sm bg-primary-100 text-primary-600">
                                   {getInitials(alumni.firstName, alumni.lastName)}
                                 </AvatarFallback>
                               </Avatar>
@@ -919,7 +919,7 @@ export default function AlumniMap() {
                             alt={`${selectedAlumni.firstName} ${selectedAlumni.lastName}`}
                             className="object-cover"
                           />
-                          <AvatarFallback className="text-xl bg-red-100 text-red-700">
+                          <AvatarFallback className="text-xl bg-primary-100 text-primary-600">
                             {getInitials(selectedAlumni.firstName, selectedAlumni.lastName)}
                           </AvatarFallback>
                         </Avatar>
@@ -1050,7 +1050,7 @@ export default function AlumniMap() {
               </ul>
               <Button
                 onClick={() => router.push("/alumni/profile")}
-                className="w-full bg-red-600 hover:bg-red-700"
+                className="w-full bg-primary hover:bg-primary/90"
               >
                 Complete Your Profile
               </Button>
@@ -1060,7 +1060,7 @@ export default function AlumniMap() {
               <p className="text-center text-gray-600 mb-6">Ready to connect with the Dell'Arte community?</p>
               <Button
                 onClick={handleSearchFocus}
-                className="w-full flex items-center justify-center space-x-2 bg-red-600 hover:bg-red-700"
+                className="w-full flex items-center justify-center space-x-2 bg-primary hover:bg-primary/90"
               >
                 <Search className="h-4 w-4" />
                 <span>Search for Alumni</span>

@@ -714,7 +714,7 @@ export default function AlumniManagement(): ReactNode {
           <div className="flex items-center space-x-3 flex-1 min-w-0">
             <Avatar className="h-12 w-12 flex-shrink-0">
               <AvatarImage src={alumni.imageUrl} alt={`${alumni.firstName} ${alumni.lastName}`} className="object-cover" />
-              <AvatarFallback className="bg-red-100 text-red-700 font-semibold">
+              <AvatarFallback className="bg-primary-100 text-primary-600 font-semibold">
                 {getInitials(alumni.firstName, alumni.lastName)}
               </AvatarFallback>
             </Avatar>
@@ -776,7 +776,7 @@ export default function AlumniManagement(): ReactNode {
               <h1 className="text-3xl font-bold text-gray-900">Alumni Management</h1>
               <p className="mt-2 text-gray-600">Manage alumni profiles and information</p>
             </div>
-            <Button className="bg-red-600 hover:bg-red-700 w-full sm:w-auto" onClick={handleAdd}>
+            <Button className="bg-primary hover:bg-primary/90 w-full sm:w-auto" onClick={handleAdd}>
               <UserPlus className="h-4 w-4 mr-2" />
               Add New Alumni
             </Button>
@@ -862,7 +862,7 @@ export default function AlumniManagement(): ReactNode {
                       <Badge
                         key={tag}
                         variant={selectedTags.includes(tag) ? "default" : "outline"}
-                        className="cursor-pointer"
+                        className={`cursor-pointer ${selectedTags.includes(tag) ? "bg-primary-600 hover:bg-primary-600/90" : ""}`}
                         onClick={() => toggleTag(tag)}
                       >
                         {tag}
@@ -960,7 +960,7 @@ export default function AlumniManagement(): ReactNode {
                   alt={`${selectedAlumni?.firstName} ${selectedAlumni?.lastName}`}
                   className="object-cover"
                 />
-                <AvatarFallback className="bg-red-100 text-red-700 text-lg">
+                <AvatarFallback className="bg-primary-100 text-primary-600 text-lg">
                   {selectedAlumni && getInitials(selectedAlumni.firstName, selectedAlumni.lastName)}
                 </AvatarFallback>
               </Avatar>
@@ -1101,7 +1101,7 @@ export default function AlumniManagement(): ReactNode {
                 setShowDetailModal(false)
                 if (selectedAlumni) handleEdit(selectedAlumni)
               }}
-              className="bg-red-600 hover:bg-red-700"
+              className="bg-primary hover:bg-primary/90"
             >
               <Edit className="h-4 w-4 mr-2" />
               Edit
@@ -1129,7 +1129,7 @@ export default function AlumniManagement(): ReactNode {
             </Button>
             <Button
               onClick={saveAlumni}
-              className="bg-red-600 hover:bg-red-700"
+              className="bg-primary hover:bg-primary/90"
               disabled={isSubmitting || !!validationErrors.phone || !!validationErrors.email}
             >
               <Save className="h-4 w-4 mr-2" />
@@ -1158,7 +1158,7 @@ export default function AlumniManagement(): ReactNode {
             </Button>
             <Button
               onClick={saveAlumni}
-              className="bg-red-600 hover:bg-red-700"
+              className="bg-primary hover:bg-primary/90"
               disabled={isSubmitting || !!validationErrors.phone || !!validationErrors.email}
             >
               <Save className="h-4 w-4 mr-2" />

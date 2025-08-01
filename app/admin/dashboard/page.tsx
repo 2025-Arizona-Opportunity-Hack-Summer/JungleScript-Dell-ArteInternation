@@ -153,7 +153,7 @@ export default function AdminDashboard() {
             <Link href="/admin/alumni" className="group">
               <Card className="h-full transition-all duration-200 hover:shadow-lg hover:scale-105 cursor-pointer border-2 hover:border-red-200">
                 <CardContent className="h-full flex flex-col items-center justify-center text-center p-8">
-                  <div className="w-16 h-16 bg-red-600 rounded-full flex items-center justify-center mb-6 group-hover:bg-red-700 transition-colors">
+                  <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center mb-6 group-hover:bg-primary/90 transition-colors">
                     <UserPlus className="h-8 w-8 text-white" />
                   </div>
                   <h3 className="text-xl font-semibold text-gray-900 mb-2">Add New Alumni</h3>

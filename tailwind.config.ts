@@ -23,10 +23,21 @@ const config: Config = {
   				DEFAULT: 'hsl(var(--popover))',
   				foreground: 'hsl(var(--popover-foreground))'
   			},
-  			primary: {
-  				DEFAULT: 'hsl(var(--primary))',
-  				foreground: 'hsl(var(--primary-foreground))'
-  			},
+  			          primary: {
+            DEFAULT: 'hsl(var(--primary))',
+            foreground: 'hsl(var(--primary-foreground))',
+            50: "#FFEEFF",
+            100: "#F3CCFF",
+            200: "#E2A8FF",
+            300: "#D183FF",
+            400: "#BD5FF3",
+            500: "#AA46E1",
+            600: "#892CB9",
+            700: "#6A2390",
+            800: "#4C1E66",
+            900: "#301640",
+            950: "#180B20",
+          },
   			secondary: {
   				DEFAULT: 'hsl(var(--secondary))',
   				foreground: 'hsl(var(--secondary-foreground))'

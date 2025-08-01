@@ -319,7 +319,7 @@ export default function AlumniProfile() {
                 <button onClick={() => setShowUploadModal(true)} className="relative">
                   <Avatar className="h-16 w-16 flex-shrink-0">
                     <AvatarImage src={user?.imageUrl} alt={`${profileData.firstName} ${profileData.lastName}`} />
-                    <AvatarFallback className="bg-red-100 text-red-700 text-xl">
+                    <AvatarFallback className="bg-primary-100 text-primary-600 text-xl">
                       {getInitials(profileData.firstName || "U", profileData.lastName || "U")}
                     </AvatarFallback>
                   </Avatar>
@@ -614,7 +614,7 @@ export default function AlumniProfile() {
             <Button
               onClick={handleSave}
               disabled={loading || !!validationErrors.phone || !!validationErrors.email}
-              className="bg-red-600 hover:bg-red-700"
+              className="bg-primary hover:bg-primary/90"
             >
               <Save className="h-4 w-4 mr-2" />
               {loading ? "Saving..." : "Save Profile"}

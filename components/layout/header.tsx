@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle, SheetDescription, SheetClose } from "@/components/ui/sheet"
 import { usePathname } from "next/navigation"
@@ -51,9 +52,7 @@ export default function Header() {
       <header className="flex h-16 items-center justify-between border-b bg-white px-4 md:px-6">
         <div className="flex items-center space-x-2">
           <Link href="/" className="flex items-center">
-            <div className="bg-red-600 p-2 rounded-md">
-              <Theater className="h-6 w-6 text-white" />
-            </div>
+            <Image src="/logo.png" alt="Dell'Arte Logo" width={40} height={40} />
             <span className="ml-2 font-semibold">Dell'Arte Alumni</span>
           </Link>
         </div>
@@ -62,7 +61,7 @@ export default function Header() {
             <Button variant="ghost">Sign In</Button>
           </Link>
           <Link href="/sign-up">
-            <Button className="bg-red-600 hover:bg-red-700">Sign Up</Button>
+            <Button className="bg-primary hover:bg-primary/90">Sign Up</Button>
           </Link>
         </div>
       </header>
@@ -88,9 +87,8 @@ export default function Header() {
     <header className="relative flex h-16 items-center justify-between border-b bg-white px-4 md:px-6">
       <div className="flex items-center">
         <Link href={isAdmin ? "/admin/dashboard" : "/map"} className="flex items-center">
-          <div className="bg-red-600 p-2 rounded-md">
-            <Theater className="h-6 w-6 text-white" />
-          </div>
+          <Image src="/logo.png" alt="Dell'Arte Logo" width={40} height={40} />
+          <span className="ml-2 font-semibold">Dell'Arte Alumni</span>
         </Link>
       </div>
 
