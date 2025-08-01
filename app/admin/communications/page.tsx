@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Mail, Users, Send, TestTube } from "lucide-react"
 
+import { useUser } from "@clerk/nextjs"
 import { useAlumniStore } from "@/lib/alumni-store"
 
 const programs = [
@@ -36,6 +37,7 @@ const emailTemplates = [
 ]
 
 export default function Communications() {
+    const { user } = useUser()
   const { alumni, loading, error, fetchAlumni } = useAlumniStore()
 
   const [searchQuery, setSearchQuery] = useState("")
@@ -47,6 +49,13 @@ export default function Communications() {
   const [recipientCount, setRecipientCount] = useState(0)
   const [isSendingTest, setIsSendingTest] = useState(false)
   const [isSendingBulk, setIsSendingBulk] = useState(false)
+  const [testEmail, setTestEmail] = useState("")
+
+  useEffect(() => {
+    if (user) {
+      setTestEmail(user.primaryEmailAddress?.emailAddress || "")
+    }
+  }, [user])
 
   // Initialize alumni data
   useEffect(() => {
@@ -54,35 +63,49 @@ export default function Communications() {
   }, [fetchAlumni])
 
   // Calculate recipient count based on filters
+    const filteredAlumni = alumni.filter((alumni) => {
+    const matchesSearch =
+      searchQuery === "" ||
+      `${alumni.firstName} ${alumni.lastName}`.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      alumni.email.toLowerCase().includes(searchQuery.toLowerCase())
+    const matchesProgram =
+      selectedProgram === "all" || alumni.programsAttended.some((p) => p.program === selectedProgram)
+    const matchesTags = selectedTags.length === 0 || selectedTags.some((tag) => alumni.tags.includes(tag))
+    return matchesSearch && matchesProgram && matchesTags
+  })
+
+  // Calculate recipient count based on filters
   useEffect(() => {
-    const filtered = alumni.filter((alumni) => {
-      const matchesSearch =
-        searchQuery === "" ||
-        `${alumni.firstName} ${alumni.lastName}`.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        alumni.email.toLowerCase().includes(searchQuery.toLowerCase())
-
-      const matchesProgram =
-        selectedProgram === "all" || alumni.programsAttended.some((p) => p.program === selectedProgram)
-
-      const matchesTags = selectedTags.length === 0 || selectedTags.some((tag) => alumni.tags.includes(tag))
-
-      return matchesSearch && matchesProgram && matchesTags
-    })
-
-    setRecipientCount(filtered.length)
-  }, [searchQuery, selectedProgram, selectedTags, alumni])
+    setRecipientCount(filteredAlumni.length)
+  }, [filteredAlumni])
 
   const toggleTag = (tag: string) => {
     setSelectedTags((prev) => (prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]))
   }
 
-  const handleSendTest = async () => {
+    const handleSendTest = async () => {
     setIsSendingTest(true)
-    // Simulate sending test email
-    setTimeout(() => {
-      setIsSendingTest(false)
-      alert("Test email sent to your address!")
-    }, 2000)
+    try {
+      const response = await fetch("/api/email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          subject,
+          body: emailBody,
+          isTest: true,
+          testRecipient: testEmail,
+        }),
+      })
+      if (response.ok) {
+        alert("Test email sent successfully!")
+      } else {
+        alert("Failed to send test email.")
+      }
+    } catch (error) {
+      console.error("Error sending test email:", error)
+      alert("An error occurred while sending the test email.")
+    }
+    setIsSendingTest(false)
   }
 
   const handleSendBulk = async () => {
@@ -90,13 +113,32 @@ export default function Communications() {
       alert("No recipients selected!")
       return
     }
-
     setIsSendingBulk(true)
-    // Simulate sending bulk email
-    setTimeout(() => {
-      setIsSendingBulk(false)
-      alert(`Bulk email sent to ${recipientCount} alumni!`)
-    }, 3000)
+    try {
+      const recipients = filteredAlumni.map((alumni) => ({
+        email: alumni.email,
+        firstName: alumni.firstName,
+        lastName: alumni.lastName,
+      }))
+      const response = await fetch("/api/email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          subject,
+          body: emailBody,
+          recipients,
+        }),
+      })
+      if (response.ok) {
+        alert(`Bulk email sent to ${recipientCount} alumni!`)
+      } else {
+        alert("Failed to send bulk email.")
+      }
+    } catch (error) {
+      console.error("Error sending bulk email:", error)
+      alert("An error occurred while sending the bulk email.")
+    }
+    setIsSendingBulk(false)
   }
 
   return (
@@ -232,26 +274,44 @@ export default function Communications() {
                   </div>
 
                   {/* Action Buttons */}
-                  <div className="space-y-3">
+                                    <div className="space-y-3">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Test Email Address</label>
+                      <Input
+                        type="email"
+                        placeholder="Enter test email address"
+                        value={testEmail}
+                        onChange={(e) => setTestEmail(e.target.value)}
+                      />
+                    </div>
                     <Button
                       variant="outline"
                       className="w-full bg-transparent"
                       onClick={handleSendTest}
-                      disabled={isSendingTest || !subject || !emailBody}
+                      disabled={isSendingTest || !subject || !emailBody || !testEmail}
                     >
                       <TestTube className="h-4 w-4 mr-2" />
                       {isSendingTest ? "Sending Test..." : "Send Test Email"}
                     </Button>
-
-                    <Button
-                      className="w-full bg-primary hover:bg-primary/90"
-                      onClick={handleSendBulk}
-                      disabled={isSendingBulk || !subject || !emailBody || recipientCount === 0}
-                    >
-                      <Send className="h-4 w-4 mr-2" />
-                      {isSendingBulk ? "Sending..." : `Send Bulk Email to ${recipientCount} Alumni`}
-                    </Button>
                   </div>
+
+                  <div className="relative">
+                    <div className="absolute inset-0 flex items-center">
+                      <span className="w-full border-t" />
+                    </div>
+                    <div className="relative flex justify-center text-xs uppercase">
+                      <span className="bg-white px-2 text-gray-500">Or</span>
+                    </div>
+                  </div>
+
+                  <Button
+                    className="w-full bg-primary hover:bg-primary/90"
+                    onClick={handleSendBulk}
+                    disabled={isSendingBulk || !subject || !emailBody || recipientCount === 0}
+                  >
+                    <Send className="h-4 w-4 mr-2" />
+                    {isSendingBulk ? "Sending..." : `Send Bulk Email to ${recipientCount} Alumni`}
+                  </Button>
 
                   {/* Warning */}
                   {recipientCount > 0 && (
