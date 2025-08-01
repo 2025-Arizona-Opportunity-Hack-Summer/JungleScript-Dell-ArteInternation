@@ -25,8 +25,9 @@ export default function AlumniMap() {
   const { alumni, loading, error, fetchAlumni } = useAlumniStore()
 
   const mapContainer = useRef<HTMLDivElement>(null)
-  const map = useRef<mapboxgl.Map | null>(null)
+    const map = useRef<mapboxgl.Map | null>(null)
   const mapboxRef = useRef<typeof import("mapbox-gl")["default"] | null>(null)
+  const detailViewRef = useRef<HTMLDivElement>(null)
   const [mapboxReady, setMapboxReady] = useState(false)
   const [markers, setMarkers] = useState<Map<string, any>>(new Map())
   const [selectedAlumniId, setSelectedAlumniId] = useState<string | null>(null)
@@ -387,10 +388,14 @@ export default function AlumniMap() {
     }
   }
 
-  const handleAlumniClick = (alumni: AlumniProfile) => {
+    const handleAlumniClick = (alumni: AlumniProfile) => {
     setSelectedAlumniId(alumni.id.toString())
     setSelectedAlumni(alumni)
     setViewMode("detail")
+
+    if (detailViewRef.current) {
+      detailViewRef.current.scrollTop = 0
+    }
 
     if (isMobile) {
       setSidebarExpanded(true)
@@ -622,7 +627,7 @@ export default function AlumniMap() {
                   </div>
 
                   {/* Content */}
-                  <div className="flex-1 overflow-y-auto p-4">
+                  <div ref={detailViewRef} className="flex-1 overflow-y-auto p-4">
                     {viewMode === "list" ? (
                       /* Users Section */
                       <div>
@@ -690,7 +695,7 @@ export default function AlumniMap() {
                                 alt={`${selectedAlumni.firstName} ${selectedAlumni.lastName}`}
                                 className="object-cover"
                               />
-                              <AvatarFallback className="text-lg bg-red-100 text-red-700">
+                              <AvatarFallback className="text-lg bg-primary-100 text-primary-600">
                                 {getInitials(selectedAlumni.firstName, selectedAlumni.lastName)}
                               </AvatarFallback>
                             </Avatar>
