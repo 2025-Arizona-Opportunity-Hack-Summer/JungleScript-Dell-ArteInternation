@@ -47,14 +47,27 @@ export async function POST(req: NextRequest) {
     }
 
     const recipientVariables: { [key: string]: any } = {};
-    recipients.forEach(
-      (recipient: { email: string; firstName: string; lastName: string }) => {
-        recipientVariables[recipient.email] = {
-          firstName: recipient.firstName,
-          lastName: recipient.lastName,
-        };
-      }
-    );
+    recipients.forEach((recipient: any) => {
+      // Extract latest program info
+      const latestProgram = recipient.programsAttended && recipient.programsAttended.length > 0 
+        ? recipient.programsAttended[recipient.programsAttended.length - 1] 
+        : null;
+
+      recipientVariables[recipient.email] = {
+        firstName: recipient.firstName || '',
+        lastName: recipient.lastName || '',
+        fullName: `${recipient.firstName || ''} ${recipient.lastName || ''}`.trim(),
+        email: recipient.email || '',
+        city: recipient.address?.city || '',
+        state: recipient.address?.state || '',
+        country: recipient.address?.country || '',
+        location: [recipient.address?.city, recipient.address?.state].filter(Boolean).join(', ') || recipient.address?.country || '',
+        program: latestProgram?.program || '',
+        graduationYear: latestProgram?.graduationYear || '',
+        jobTitle: recipient.currentWork?.title || '',
+        organization: recipient.currentWork?.organization || '',
+      };
+    });
 
     const messageData = {
       from: `Dell'Arte International <noreply@${DOMAIN}>`,
