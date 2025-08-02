@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Users, UserPlus, Mail, Upload, TrendingUp } from "lucide-react"
+import { Users, UserPlus, Upload, TrendingUp, Map as MapIcon } from "lucide-react"
 
 import Link from "next/link"
 import { useAlumniStore } from "@/lib/alumni-store"
@@ -161,15 +161,14 @@ export default function AdminDashboard() {
                 </CardContent>
               </Card>
             </Link>
-
-            <Link href="/admin/communications" className="group">
+            <Link href="/map" className="group">
               <Card className="h-full transition-all duration-200 hover:shadow-lg hover:scale-105 cursor-pointer border-2 hover:border-blue-200">
                 <CardContent className="h-full flex flex-col items-center justify-center text-center p-2 md:p-8">
                   <div className="w-10 h-10 md:w-16 md:h-16 bg-blue-600 rounded-full flex items-center justify-center mb-2 md:mb-6 group-hover:bg-blue-700 transition-colors">
-                    <Mail className="h-5 w-5 md:h-8 md:w-8 text-white" />
-                  </div>
-                  <h3 className="text-sm md:text-xl font-semibold text-gray-900 mb-1 md:mb-2">Send Email</h3>
-                  <p className="hidden md:block text-gray-600 text-xs md:text-sm">Communicate via email campaigns</p>
+  <MapIcon className="h-5 w-5 md:h-8 md:w-8 text-white" />
+</div>
+                  <h3 className="text-sm md:text-xl font-semibold text-gray-900 mb-1 md:mb-2">View Alumni Map</h3>
+                  <p className="hidden md:block text-gray-600 text-xs md:text-sm">Explore the alumni network visually</p>
                 </CardContent>
               </Card>
             </Link>

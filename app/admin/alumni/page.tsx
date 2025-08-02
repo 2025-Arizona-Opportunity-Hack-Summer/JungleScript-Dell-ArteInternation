@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
+import React, { useState, useEffect, useMemo } from "react"
 import type { ReactNode } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -29,6 +29,9 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { Switch } from "@/components/ui/switch"
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
+import { Checkbox } from "@/components/ui/checkbox"
 import {
   Search,
   UserPlus,
@@ -389,6 +392,65 @@ const EditForm = ({
   )
 }
 
+import { EmailComposerModal } from "@/components/admin/EmailComposerModal"
+
+const AlumniCard = React.memo(({ alumni, onSelect, isSelected, onEdit, onDelete }: { alumni: AlumniProfile; onSelect: (alumni: AlumniProfile) => void; isSelected: boolean; onEdit: (alumni: AlumniProfile) => void; onDelete: (alumni: AlumniProfile) => void; }) => (
+    <Card 
+      className={`transition-all hover:shadow-md ${isSelected ? "ring-2 ring-primary" : ""}`}
+      onClick={() => onSelect(alumni)}
+    >
+      <CardContent className="p-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3 flex-1 min-w-0">
+            <Checkbox
+              checked={isSelected}
+              onClick={(e) => e.stopPropagation()}
+              onCheckedChange={() => onSelect(alumni)}
+              className="mr-2"
+            />
+            <Avatar className="h-12 w-12 flex-shrink-0">
+              <AvatarImage src={alumni.imageUrl} alt={`${alumni.firstName} ${alumni.lastName}`} className="object-cover" />
+              <AvatarFallback className="bg-primary-100 text-primary-600 font-semibold">
+                {`${alumni.firstName.charAt(0)}${alumni.lastName.charAt(0)}`.toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold text-gray-900 truncate">
+                {alumni.firstName} {alumni.lastName}
+              </p>
+              <p className="text-sm text-gray-500 truncate">
+                {alumni.address.city}, {alumni.address.state || alumni.address.country}
+              </p>
+            </div>
+          </div>
+          <div className="flex space-x-1 ml-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit(alumni);
+              }}
+            >
+              <Edit className="h-3 w-3" />
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete(alumni);
+              }}
+            >
+              <Trash2 className="h-3 w-3" />
+            </Button>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+));
+AlumniCard.displayName = "AlumniCard";
+
 export default function AlumniManagement(): ReactNode {
   const { alumni, loading, error, addAlumni, updateAlumni, deleteAlumni, fetchAlumni } = useAlumniStore()
 
@@ -397,6 +459,7 @@ export default function AlumniManagement(): ReactNode {
   const [selectedCountry, setSelectedCountry] = useState<string>("all")
   const [selectedAccountStatus, setSelectedAccountStatus] = useState<string>("all")
   const [selectedTags, setSelectedTags] = useState<string[]>([])
+const [tagFilterMode, setTagFilterMode] = useState<"OR" | "AND">("OR")
   const [currentPage, setCurrentPage] = useState(1)
   const [isMobile, setIsMobile] = useState(false)
 
@@ -405,6 +468,9 @@ export default function AlumniManagement(): ReactNode {
   const [showDetailModal, setShowDetailModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
   const [showAddModal, setShowAddModal] = useState(false)
+  const [showEmailModal, setShowEmailModal] = useState(false)
+  
+  const [selectedAlumniForActions, setSelectedAlumniForActions] = useState<AlumniProfile[]>([])
 
   const [selectedAlumni, setSelectedAlumni] = useState<AlumniProfile | null>(null)
   const [editingAlumni, setEditingAlumni] = useState<AlumniProfile | null>(null)
@@ -423,7 +489,11 @@ export default function AlumniManagement(): ReactNode {
   // Check if mobile
   useEffect(() => {
     const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768)
+      const isNowMobile = window.innerWidth < 768
+      if(isNowMobile) {
+        console.log("Mobile view activated");
+      }
+      setIsMobile(isNowMobile);
     }
     checkMobile()
     window.addEventListener("resize", checkMobile)
@@ -465,7 +535,10 @@ export default function AlumniManagement(): ReactNode {
 
       
             const lowercasedAlumniTags = alumni.tags.map(t => t.toLowerCase());
-      const matchesTags = selectedTags.length === 0 || selectedTags.some((tag) => lowercasedAlumniTags.includes(tag.toLowerCase()));
+      const matchesTags = selectedTags.length === 0 || 
+        (tagFilterMode === 'OR' 
+          ? selectedTags.some((tag) => lowercasedAlumniTags.includes(tag.toLowerCase()))
+          : selectedTags.every((tag) => lowercasedAlumniTags.includes(tag.toLowerCase())))
 
       const matchesAccountStatus =
         selectedAccountStatus === "all" ||
@@ -479,7 +552,7 @@ export default function AlumniManagement(): ReactNode {
       filteredAlumni: filtered,
       uniqueCountries: Array.from(countries).sort()
     }
-  }, [alumni, searchQuery, selectedProgram, selectedCountry, selectedTags, selectedAccountStatus]);
+  }, [alumni, searchQuery, selectedProgram, selectedCountry, selectedTags, selectedAccountStatus, tagFilterMode]);
 
   const totalPages = Math.ceil(filteredAlumni.length / itemsPerPage)
   const startIndex = (currentPage - 1) * itemsPerPage
@@ -493,24 +566,48 @@ export default function AlumniManagement(): ReactNode {
     setSelectedTags((prev) => (prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]))
   }
 
+  // Bulk selection logic
+  const handleSelectAlumni = (alumni: AlumniProfile) => {
+    setSelectedAlumniForActions((prev) => {
+      if (prev.find((a) => a.id === alumni.id)) {
+        return prev.filter((a) => a.id !== alumni.id)
+      } else {
+        return [...prev, alumni]
+      }
+    })
+  }
+
+  const handleSelectAll = () => {
+    if (selectedAlumniForActions.length === paginatedAlumni.length) {
+      setSelectedAlumniForActions([])
+    } else {
+      setSelectedAlumniForActions(paginatedAlumni)
+    }
+  }
+
+  // Clear selection when filters change
+  useEffect(() => {
+    setSelectedAlumniForActions([])
+  }, [searchQuery, selectedProgram, selectedCountry, selectedTags, selectedAccountStatus])
+
   // CRUD Operations
-  const handleDelete = (alumni: AlumniProfile) => {
-    setSelectedAlumni(alumni)
+  const handleDelete = (alumniToDelete: AlumniProfile) => {
+    setSelectedAlumniForActions([alumniToDelete])
     setShowDeleteDialog(true)
   }
 
   const confirmDelete = async () => {
-    if (selectedAlumni && !isSubmitting) {
-      setIsSubmitting(true)
-      try {
-        await deleteAlumni(selectedAlumni.id)
-        setShowDeleteDialog(false)
-        setSelectedAlumni(null)
-      } catch (error) {
-        console.error("Failed to delete alumni:", error)
-      } finally {
-        setIsSubmitting(false)
-      }
+    if (selectedAlumniForActions.length === 0 || isSubmitting) return
+
+    setIsSubmitting(true)
+    try {
+      await Promise.all(selectedAlumniForActions.map((alumni) => deleteAlumni(alumni.id)))
+      setShowDeleteDialog(false)
+      setSelectedAlumniForActions([])
+    } catch (error) {
+      console.error("Failed to delete alumni:", error)
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
@@ -707,52 +804,7 @@ export default function AlumniManagement(): ReactNode {
     }
   }
 
-  const AlumniCard = ({ alumni }: { alumni: AlumniProfile }) => (
-    <Card className="cursor-pointer transition-all hover:shadow-md" onClick={() => handleDetailView(alumni)}>
-      <CardContent className="p-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3 flex-1 min-w-0">
-            <Avatar className="h-12 w-12 flex-shrink-0">
-              <AvatarImage src={alumni.imageUrl} alt={`${alumni.firstName} ${alumni.lastName}`} className="object-cover" />
-              <AvatarFallback className="bg-primary-100 text-primary-600 font-semibold">
-                {getInitials(alumni.firstName, alumni.lastName)}
-              </AvatarFallback>
-            </Avatar>
-            <div className="flex-1 min-w-0">
-              <p className="font-semibold text-gray-900 truncate">
-                {alumni.firstName} {alumni.lastName}
-              </p>
-              <p className="text-sm text-gray-500 truncate">
-                {alumni.address.city}, {alumni.address.state || alumni.address.country}
-              </p>
-            </div>
-          </div>
-          <div className="flex space-x-1 ml-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={(e) => {
-                e.stopPropagation()
-                handleEdit(alumni)
-              }}
-            >
-              <Edit className="h-3 w-3" />
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={(e) => {
-                e.stopPropagation()
-                handleDelete(alumni)
-              }}
-            >
-              <Trash2 className="h-3 w-3" />
-            </Button>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  )
+  
 
   if (error) {
     return (
@@ -768,153 +820,214 @@ export default function AlumniManagement(): ReactNode {
   }
 
   return (
-    <div className="flex-1 p-6 bg-gray-50 overflow-y-auto">
-      <div className="max-w-7xl mx-auto">
-        <div className="px-4 py-6 sm:px-0">
-          <div className="flex flex-col sm:flex-row justify-between sm:items-center mb-8 gap-4">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Alumni Management</h1>
-              <p className="mt-2 text-gray-600">Manage alumni profiles and information</p>
+    <>
+      <div className="flex-1 p-6 bg-gray-50 overflow-y-auto">
+        <div className="max-w-7xl mx-auto">
+          <div className="px-4 py-6 sm:px-0">
+            <div className="flex flex-col sm:flex-row justify-between sm:items-center mb-8 gap-4">
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">Alumni Management</h1>
+                <p className="mt-2 text-gray-600">Manage alumni profiles and information</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="hidden sm:flex flex-col sm:flex-row gap-2">
+                  <Button 
+                    className="bg-primary hover:bg-primary/90 w-full sm:w-auto" 
+                    onClick={() => setShowEmailModal(true)} 
+                    disabled={selectedAlumniForActions.length === 0}
+                  >
+                    <Mail className="h-4 w-4 mr-2" />
+                    Email Selected ({selectedAlumniForActions.length})
+                  </Button>
+                  <Button 
+                    variant="destructive" 
+                    className="w-full sm:w-auto" 
+                    onClick={() => setShowDeleteDialog(true)}
+                    disabled={selectedAlumniForActions.length === 0}
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete Selected ({selectedAlumniForActions.length})
+                  </Button>
+                </div>
+                <Button className="bg-primary hover:bg-primary/90 w-full sm:w-auto" onClick={handleAdd}>
+                  <UserPlus className="h-4 w-4 mr-2" />
+                  Add New Alumni
+                </Button>
+              </div>
             </div>
-            <Button className="bg-primary hover:bg-primary/90 w-full sm:w-auto" onClick={handleAdd}>
-              <UserPlus className="h-4 w-4 mr-2" />
-              Add New Alumni
-            </Button>
           </div>
 
           {/* Filters */}
-          <Card className="mb-6">
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <Filter className="h-5 w-5 mr-2" />
-                Filter Controls
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Search */}
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                <Input
-                  placeholder="Search by name or email..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {/* Program Filter */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Filter by Program</label>
-                  <Select value={selectedProgram} onValueChange={setSelectedProgram}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="All Programs" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Programs</SelectItem>
-                      {programs.map((program) => (
-                        <SelectItem key={program} value={program}>
-                          {program}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+          <Accordion type="single" collapsible className="mb-6">
+            <AccordionItem value="filters">
+              <AccordionTrigger>
+                <div className="flex items-center text-lg">
+                  <Filter className="h-5 w-5 mr-2" />
+                  Filter Controls
                 </div>
-
-                {/* Account Status Filter */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Account Status</label>
-                  <Select value={selectedAccountStatus} onValueChange={setSelectedAccountStatus}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="All Statuses" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Statuses</SelectItem>
-                      <SelectItem value="hasAccount">Has Account</SelectItem>
-                      <SelectItem value="noAccount">No Account</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Country Filter */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Filter by Country</label>
-                  <Select value={selectedCountry} onValueChange={setSelectedCountry}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="All Countries" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Countries</SelectItem>
-                      {uniqueCountries.map((country) => (
-                        <SelectItem key={country} value={country}>
-                          {country}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Tags Filter */}
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Filter by Tags</label>
-                  <div className="flex flex-wrap gap-2 p-2 border rounded-md">
-                    {allTags.map((tag) => (
-                      <Badge
-                        key={tag}
-                        variant={selectedTags.includes(tag) ? "default" : "outline"}
-                        className={`cursor-pointer ${selectedTags.includes(tag) ? "bg-primary-600 hover:bg-primary-600/90" : ""}`}
-                        onClick={() => toggleTag(tag)}
-                      >
-                        {tag}
-                      </Badge>
-                    ))}
+              </AccordionTrigger>
+              <AccordionContent className="p-4 pt-2">
+                <div className="space-y-4">
+                  {/* Search */}
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                    <Input
+                      placeholder="Search by name or email..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="pl-10"
+                    />
                   </div>
-                </div>
-              </div>
 
-                            {/* Active Filters Display */}
-              {(searchQuery || selectedProgram !== "all" || selectedCountry !== "all" || selectedTags.length > 0 || selectedAccountStatus !== "all") && (
-                <div className="flex flex-wrap items-center gap-2 text-sm text-gray-600">
-                  <span>Active filters:</span>
-                  {searchQuery && <Badge variant="secondary">Search: "{searchQuery}"</Badge>}
-                  {selectedProgram !== "all" && <Badge variant="secondary">Program: {selectedProgram}</Badge>}
-                  {selectedCountry !== "all" && <Badge variant="secondary">Country: {selectedCountry}</Badge>}
-                  {selectedAccountStatus === "hasAccount" && <Badge variant="secondary">Status: Has Account</Badge>}
-                  {selectedAccountStatus === "noAccount" && <Badge variant="secondary">Status: No Account</Badge>}
-                  {selectedTags.map((tag) => (
-                    <Badge key={tag} variant="secondary">
-                      Tag: {tag}
-                    </Badge>
-                  ))}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      setSearchQuery("")
-                      setSelectedProgram("all")
-                      setSelectedCountry("all")
-                      setSelectedTags([])
-                      setSelectedAccountStatus("all")
-                    }}
-                  >
-                    Clear all
-                  </Button>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {/* Program Filter */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Filter by Program</label>
+                      <Select value={selectedProgram} onValueChange={setSelectedProgram}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="All Programs" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Programs</SelectItem>
+                          {programs.map((program) => (
+                            <SelectItem key={program} value={program}>
+                              {program}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* Account Status Filter */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Account Status</label>
+                      <Select value={selectedAccountStatus} onValueChange={setSelectedAccountStatus}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="All Statuses" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Statuses</SelectItem>
+                          <SelectItem value="hasAccount">Has Account</SelectItem>
+                          <SelectItem value="noAccount">No Account</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* Country Filter */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Filter by Country</label>
+                      <Select value={selectedCountry} onValueChange={setSelectedCountry}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="All Countries" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Countries</SelectItem>
+                          {uniqueCountries.map((country) => (
+                            <SelectItem key={country} value={country}>
+                              {country}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* Tags Filter */}
+                    <div className="md:col-span-3">
+                      <div className="flex justify-between items-center mb-2">
+                        <label className="block text-sm font-medium text-gray-700">Filter by Tags</label>
+                        <div className="flex items-center space-x-2">
+                          <span className={`text-sm ${tagFilterMode === 'OR' ? 'text-primary' : 'text-gray-500'}`}>OR</span>
+                          <Switch
+                            checked={tagFilterMode === 'AND'}
+                            onCheckedChange={(checked) => setTagFilterMode(checked ? 'AND' : 'OR')}
+                          />
+                          <span className={`text-sm ${tagFilterMode === 'AND' ? 'text-primary' : 'text-gray-500'}`}>AND</span>
+                        </div>
+                      </div>
+                      <div className="flex flex-wrap gap-2 p-2 border rounded-md">
+                        {allTags.map((tag) => (
+                          <Badge
+                            key={tag}
+                            variant={selectedTags.includes(tag) ? "default" : "outline"}
+                            className={`cursor-pointer ${selectedTags.includes(tag) ? "bg-primary-600 hover:bg-primary-600/90" : ""}`}
+                            onClick={() => toggleTag(tag)}
+                          >
+                            {tag}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Active Filters Display */}
+                  {(searchQuery || selectedProgram !== "all" || selectedCountry !== "all" || selectedTags.length > 0 || selectedAccountStatus !== "all") && (
+                    <div className="flex flex-wrap items-center gap-2 text-sm text-gray-600">
+                      <span>Active filters:</span>
+                      {searchQuery && <Badge variant="secondary">Search: "{searchQuery}"</Badge>}
+                      {selectedProgram !== "all" && <Badge variant="secondary">Program: {selectedProgram}</Badge>}
+                      {selectedCountry !== "all" && <Badge variant="secondary">Country: {selectedCountry}</Badge>}
+                      {selectedAccountStatus === "hasAccount" && <Badge variant="secondary">Status: Has Account</Badge>}
+                      {selectedAccountStatus === "noAccount" && <Badge variant="secondary">Status: No Account</Badge>}
+                      {selectedTags.map((tag) => (
+                        <Badge key={tag} variant="secondary">
+                          Tag: {tag}
+                        </Badge>
+                      ))}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setSearchQuery("")
+                          setSelectedProgram("all")
+                          setSelectedCountry("all")
+                          setSelectedTags([])
+                          setSelectedAccountStatus("all")
+                        }}
+                      >
+                        Clear all
+                      </Button>
+                    </div>
+                  )}
                 </div>
-              )}
-            </CardContent>
-          </Card>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
 
           {/* Results Summary */}
-          <div className="mb-4">
-            <p className="text-sm text-gray-600">
-              Showing {paginatedAlumni.length} of {filteredAlumni.length} alumni
-            </p>
-          </div>
+          {!isMobile && (
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="selectAll"
+                  checked={selectedAlumniForActions.length === paginatedAlumni.length && paginatedAlumni.length > 0}
+                  onCheckedChange={handleSelectAll}
+                />
+                <Label htmlFor="selectAll" className="text-sm font-medium">
+                  Select All on Page
+                </Label>
+                {selectedAlumniForActions.length > 0 && (
+                  <Button variant="ghost" size="sm" onClick={() => setSelectedAlumniForActions([])}>
+                    Clear Selection
+                  </Button>
+                )}
+              </div>
+              <p className="text-sm text-gray-600">
+                Showing {paginatedAlumni.length} of {filteredAlumni.length} alumni
+              </p>
+            </div>
+          )}
 
           {/* Alumni Grid */}
           <div className={`grid gap-4 mb-6 ${isMobile ? "grid-cols-1" : "grid-cols-1 md:grid-cols-2 lg:grid-cols-3"}`}>
             {paginatedAlumni.map((alumni) => (
-              <AlumniCard key={alumni.id} alumni={alumni} />
+              <AlumniCard 
+                key={alumni.id} 
+                alumni={alumni} 
+                onSelect={handleSelectAlumni}
+                isSelected={selectedAlumniForActions.some((a) => a.id === alumni.id)}
+                onEdit={handleEdit}
+                onDelete={handleDelete}
+              />
             ))}
           </div>
 
@@ -949,7 +1062,6 @@ export default function AlumniManagement(): ReactNode {
         </div>
       </div>
 
-      {/* Detail Modal */}
       <Dialog open={showDetailModal} onOpenChange={setShowDetailModal}>
         <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
@@ -1174,8 +1286,7 @@ export default function AlumniManagement(): ReactNode {
           <AlertDialogHeader>
             <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the profile for {selectedAlumni?.firstName}{" "}
-              {selectedAlumni?.lastName}.
+              This action cannot be undone. This will permanently delete the selected alumni profile(s).
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -1186,6 +1297,36 @@ export default function AlumniManagement(): ReactNode {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+
+      {isMobile && selectedAlumniForActions.length > 0 && (
+        <div className="fixed bottom-0 left-0 right-0 bg-white p-4 border-t shadow-lg z-50">
+          <div className="flex justify-between items-center">
+            <span className="text-sm font-medium">{selectedAlumniForActions.length} selected</span>
+            <div className="flex space-x-2">
+              <Button variant="outline" size="sm" onClick={() => {
+                console.log("Opening email modal from mobile bar");
+                setShowEmailModal(true)
+              }}>
+                <Mail className="h-4 w-4 mr-2" />
+                Email
+              </Button>
+              <Button variant="destructive" size="sm" onClick={() => setShowDeleteDialog(true)}>
+                <Trash2 className="h-4 w-4 mr-2" />
+                Delete
+              </Button>
+              <Button variant="ghost" size="sm" onClick={() => setSelectedAlumniForActions([])}>
+                Clear
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <EmailComposerModal
+        isOpen={showEmailModal}
+        onOpenChange={setShowEmailModal}
+        recipients={selectedAlumniForActions}
+      />
+    </>
   )
 }
