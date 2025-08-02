@@ -13,10 +13,10 @@ export async function GET() {
     if (userRole === "admin") {
       // Admins can see everyone
     } else if (userId) {
-      // Logged-in alumni can see public and alumni-only profiles
-      query = query.in("profilePrivacy", ["public", "alumni-only"])
+      // Logged-in alumni can see public profiles
+      query = query.eq("profilePrivacy", "public")
     } else {
-      // Not-logged-in users can only see public profiles
+      // Not-logged-in users can only see public profiles (shouldn't happen since app requires auth)
       query = query.eq("profilePrivacy", "public")
     }
 

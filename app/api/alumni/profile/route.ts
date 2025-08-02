@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { auth, currentUser } from "@clerk/nextjs/server"
 import { supabaseAdmin } from "@/lib/supabaseAdmin"
+import { createServerSupabaseClient } from "@/lib/supabase-server"
 
 export async function GET() {
   try {
@@ -10,7 +11,9 @@ export async function GET() {
       return new NextResponse("Unauthorized", { status: 401 })
     }
 
-    const { data, error } = await supabaseAdmin.from("alumni").select("*").eq("clerkUserId", userId).single()
+    // Use authenticated client for user data access to respect RLS
+    const supabase = await createServerSupabaseClient()
+    const { data, error } = await supabase.from("alumni").select("*").eq("clerkUserId", userId).single()
 
     if (error) {
       if (error.code === "PGRST116") {

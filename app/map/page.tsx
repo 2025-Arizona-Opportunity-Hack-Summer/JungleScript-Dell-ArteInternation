@@ -61,7 +61,7 @@ export default function AlumniMap() {
     fetchAlumni()
   }, [fetchAlumni])
 
-  const { uniquePrograms, uniqueCountries, uniqueTags } = useMemo(() => {
+  const { uniquePrograms, uniqueCountries } = useMemo(() => {
     const programs = new Set<string>()
     const countries = new Set<string>()
     alumni.forEach((alum) => {
@@ -716,15 +716,12 @@ export default function AlumniMap() {
                               variant={
                                 selectedAlumni.profilePrivacy === "public"
                                   ? "outline"
-                                  : selectedAlumni.profilePrivacy === "alumni-only"
-                                  ? "secondary"
                                   : "destructive"
                               }
                             >
                               {selectedAlumni.profilePrivacy === "public" && <Globe className="h-3 w-3 mr-1" />}
-                              {selectedAlumni.profilePrivacy === "alumni-only" && <Users className="h-3 w-3 mr-1" />}
                               {selectedAlumni.profilePrivacy === "private" && <Lock className="h-3 w-3 mr-1" />}
-                              <span className="capitalize">{selectedAlumni.profilePrivacy.replace("-", " ")}</span>
+                              <span className="capitalize">{selectedAlumni.profilePrivacy}</span>
                             </Badge>
                           )}
 
@@ -946,15 +943,12 @@ export default function AlumniMap() {
                             variant={
                               selectedAlumni.profilePrivacy === "public"
                                 ? "outline"
-                                : selectedAlumni.profilePrivacy === "alumni-only"
-                                ? "secondary"
                                 : "destructive"
                             }
                           >
                             {selectedAlumni.profilePrivacy === "public" && <Globe className="h-3 w-3 mr-1" />}
-                            {selectedAlumni.profilePrivacy === "alumni-only" && <Users className="h-3 w-3 mr-1" />}
                             {selectedAlumni.profilePrivacy === "private" && <Lock className="h-3 w-3 mr-1" />}
-                            <span className="capitalize">{selectedAlumni.profilePrivacy.replace("-", " ")}</span>
+                            <span className="capitalize">{selectedAlumni.profilePrivacy}</span>
                           </Badge>
                         </div>
                       )}

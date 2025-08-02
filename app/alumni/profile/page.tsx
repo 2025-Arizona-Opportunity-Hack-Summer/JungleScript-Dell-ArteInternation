@@ -599,11 +599,10 @@ export default function AlumniProfile() {
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="public">Public - Visible to everyone</SelectItem>
-                    <SelectItem value="alumni-only">Alumni Only - Visible to Dell'Arte alumni</SelectItem>
-                    <SelectItem value="private">Private - Only visible to you</SelectItem>
-                  </SelectContent>
+                                  <SelectContent>
+                  <SelectItem value="public">Public - Visible to all alumni</SelectItem>
+                  <SelectItem value="private">Private - Only visible to you</SelectItem>
+                </SelectContent>
                 </Select>
               </div>
             </CardContent>

@@ -44,7 +44,7 @@ export interface AlumniProfile {
   experiencesAtDellArte: string[]
   referrals: string[]
   lastUpdated?: string
-  profilePrivacy: "public" | "private" | "alumni-only"
+  profilePrivacy: "public" | "private"
   donationHistory: {
     date: string
     amount: number
@@ -74,10 +74,23 @@ export const useAlumniStore = create<AlumniStore>((set, get) => ({
     set({ loading: true, error: null })
 
     try {
-      const response = await fetch("/api/alumni/map")
-      if (!response.ok) {
-        throw new Error("Failed to fetch alumni data.")
+      if (!isSupabaseConfigured) {
+        console.log("Supabase not configured, using demo data")
+        set({ alumni: demoAlumni, loading: false })
+        return
       }
+
+      console.log("Fetching alumni through API...")
+      // Use the admin API route which handles both admin and user permissions properly
+      const response = await fetch("/api/admin/alumni", {
+        method: "GET",
+        credentials: "include",
+      })
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch alumni: ${response.statusText}`)
+      }
+
       const data = await response.json()
       set({ alumni: data || [], loading: false })
     } catch (error) {
@@ -94,7 +107,7 @@ export const useAlumniStore = create<AlumniStore>((set, get) => ({
     set({ error: null })
 
     try {
-      if (!isSupabaseConfigured || !supabase) {
+      if (!isSupabaseConfigured) {
         console.log("Supabase not configured, adding to local state only")
         const alumni = get().alumni
         const newId = Math.max(...alumni.map((a) => a.id), 0) + 1
@@ -103,13 +116,20 @@ export const useAlumniStore = create<AlumniStore>((set, get) => ({
         return
       }
 
-            const { id, ...alumniData } = newAlumni as AlumniProfile
-      const { data, error } = await supabase.from("alumni").insert(alumniData).select().single()
+      const response = await fetch("/api/admin/alumni", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify(newAlumni),
+      })
 
-      if (error) {
-        throw error
+      if (!response.ok) {
+        throw new Error(`Failed to add alumni: ${response.statusText}`)
       }
 
+      const data = await response.json()
       if (data) {
         set({ alumni: [...get().alumni, data] })
       }
@@ -122,7 +142,7 @@ export const useAlumniStore = create<AlumniStore>((set, get) => ({
     set({ error: null })
 
     try {
-      if (!isSupabaseConfigured || !supabase) {
+      if (!isSupabaseConfigured) {
         console.log("Supabase not configured, updating local state only")
         set({
           alumni: get().alumni.map((a) => (a.id === updatedAlumni.id ? updatedAlumni : a)),
@@ -130,12 +150,20 @@ export const useAlumniStore = create<AlumniStore>((set, get) => ({
         return
       }
 
-      const { data, error } = await supabase.from("alumni").update(updatedAlumni).eq("id", updatedAlumni.id).select().single()
+      const response = await fetch(`/api/admin/alumni/${updatedAlumni.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify(updatedAlumni),
+      })
 
-      if (error) {
-        throw error
+      if (!response.ok) {
+        throw new Error(`Failed to update alumni: ${response.statusText}`)
       }
 
+      const data = await response.json()
       if (data) {
         set({
           alumni: get().alumni.map((a) => (a.id === data.id ? data : a)),
@@ -150,16 +178,19 @@ export const useAlumniStore = create<AlumniStore>((set, get) => ({
     set({ error: null })
 
     try {
-      if (!isSupabaseConfigured || !supabase) {
+      if (!isSupabaseConfigured) {
         console.log("Supabase not configured, deleting from local state only")
         set({ alumni: get().alumni.filter((a) => a.id !== id) })
         return
       }
 
-      const { error } = await supabase.from("alumni").delete().eq("id", id)
+      const response = await fetch(`/api/admin/alumni/${id}`, {
+        method: "DELETE",
+        credentials: "include",
+      })
 
-      if (error) {
-        throw error
+      if (!response.ok) {
+        throw new Error(`Failed to delete alumni: ${response.statusText}`)
       }
 
       set({ alumni: get().alumni.filter((a) => a.id !== id) })

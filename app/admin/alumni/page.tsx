@@ -1282,17 +1282,50 @@ const [tagFilterMode, setTagFilterMode] = useState<"OR" | "AND">("OR")
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <AlertDialogContent>
+        <AlertDialogContent className="max-w-md">
           <AlertDialogHeader>
-            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the selected alumni profile(s).
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Trash2 className="h-5 w-5 text-destructive" />
+              Delete Alumni Profile{selectedAlumniForActions.length > 1 ? 's' : ''}?
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3 text-sm">
+                <div className="font-medium text-foreground">
+                  {selectedAlumniForActions.length === 1 
+                    ? `You are about to permanently delete ${selectedAlumniForActions[0]?.firstName} ${selectedAlumniForActions[0]?.lastName}'s profile data.`
+                    : `You are about to permanently delete ${selectedAlumniForActions.length} alumni profiles.`
+                  }
+                </div>
+                
+                <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3 space-y-2">
+                  <div className="font-medium text-yellow-800">What will happen:</div>
+                  <ul className="text-yellow-700 space-y-1 text-xs">
+                    <li>• Profile data will be permanently removed from the database</li>
+                    <li>• Alumni will no longer appear on the map or in searches</li>
+                    <li>• Their Clerk account will remain active</li>
+                    <li>• They can recreate their profile if they log in again</li>
+                  </ul>
+                </div>
+                
+                <div className="text-destructive font-medium">
+                  This action cannot be undone.
+                </div>
+              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setSelectedAlumni(null)}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete} disabled={isSubmitting}>
-              {isSubmitting ? "Deleting..." : "Continue"}
+            <AlertDialogCancel onClick={() => {
+              setShowDeleteDialog(false);
+              setSelectedAlumniForActions([]);
+            }}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmDelete} 
+              disabled={isSubmitting}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              {isSubmitting ? "Deleting..." : "Delete Permanently"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

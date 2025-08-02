@@ -148,6 +148,18 @@ export default function RegisterPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-8">
+            {/* Info message for users */}
+            <Alert>
+              <AlertDescription>
+                <div className="space-y-2">
+                  <div className="font-medium">Setting up your Dell'Arte Alumni profile</div>
+                  <div className="text-sm text-muted-foreground">
+                    If you previously had a profile that was removed, you can recreate it here with your current information. Your account login remains the same.
+                  </div>
+                </div>
+              </AlertDescription>
+            </Alert>
+
             {error && (
               <Alert variant="destructive">
                 <AlertDescription>{error}</AlertDescription>
@@ -306,9 +318,8 @@ export default function RegisterPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="public">Public</SelectItem>
-                  <SelectItem value="alumni-only">Alumni Only</SelectItem>
-                  <SelectItem value="private">Private</SelectItem>
+                  <SelectItem value="public">Public - Visible to all alumni</SelectItem>
+                  <SelectItem value="private">Private - Only visible to you</SelectItem>
                 </SelectContent>
               </Select>
               <div className="flex items-center space-x-3 pt-2">
