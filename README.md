@@ -1,8 +1,6 @@
 
     # Team JungleScript: Dell'Arte Alumni Network 🎭
 
-![Dell'Arte Alumni Network](https://via.placeholder.com/800x400/4F46E5/FFFFFF?text=Dell%27Arte+Alumni+Network)
-
 ## 🎯 Problem Statement
 
 [Dell'Arte International](https://dellarte.com), a renowned school of physical theatre located in Blue Lake, California, needed a modern solution to connect and manage their extensive alumni network. With graduates spanning decades and continents, the organization lacked an effective way to:
@@ -145,8 +143,8 @@ Navigate to [http://localhost:3000](http://localhost:3000)
 - **Nonprofit Partner**: [Dell'Arte International](https://ohack.dev/nonprofit/eObX4Ig63NLCKuKGN8P6) 
 - **Hackathon**: [2025 Summer Opportunity Hack](https://www.ohack.dev/hack/2025_summer)
 - **Team Slack**: [#junglescript](https://opportunity-hack.slack.com/app_redirect?channel=junglescript)
-- **DevPost**: [Project Submission](#) <!-- Add DevPost link when available -->
-- **Demo Video**: [Watch Our Presentation](#) <!-- Add demo video link -->
+- **DevPost**: [Project Submission](https://devpost.com/software/junglescript-dell-arte-international-project) <!-- Add DevPost link when available -->
+- **Demo Video**: [Watch Our Presentation](https://youtu.be/3xfnTsLIAGs) <!-- Add demo video link -->
 
 ## 📜 License
 
