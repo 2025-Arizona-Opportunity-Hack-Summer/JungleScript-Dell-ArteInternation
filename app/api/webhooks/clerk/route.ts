@@ -1,7 +1,7 @@
 import { Webhook } from "svix"
 import { headers } from "next/headers"
 import { WebhookEvent } from "@clerk/nextjs/server"
-import { supabase } from "@/lib/supabase"
+import { supabaseAdmin } from "@/lib/supabaseAdmin"
 
 export async function POST(req: Request) {
   const WEBHOOK_SECRET = process.env.CLERK_WEBHOOK_SECRET
@@ -40,7 +40,7 @@ export async function POST(req: Request) {
       "svix-signature": svix_signature,
     }) as WebhookEvent
   } catch (err) {
-    console.error("Error verifying webhook:", err)
+    logger.api.error("webhooks/clerk", "Error verifying webhook", err)
     return new Response("Error occured", {
       status: 400,
     })
@@ -49,17 +49,14 @@ export async function POST(req: Request) {
   const { id } = evt.data
   const eventType = evt.type
 
-  if (!supabase) {
-    console.error("Supabase client is not initialized.")
-    return new Response("Supabase client is not initialized", { status: 500 })
-  }
+  // webhook operations require admin privileges for user creation
 
   if (eventType === "user.created") {
     const { email_addresses, first_name, last_name, id: clerk_id } = evt.data
     const email = email_addresses[0].email_address
 
     // Check if user already exists in Supabase
-    const { data: existingAlumni, error: selectError } = await supabase
+    const { data: existingAlumni, error: selectError } = await supabaseAdmin
       .from("alumni")
       .select("id")
       .eq("email", email)
@@ -67,24 +64,24 @@ export async function POST(req: Request) {
 
     if (selectError && selectError.code !== "PGRST116") {
       // PGRST116: 'No rows found' - this is not an error in our case
-      console.error("Error checking for existing user:", selectError)
+      logger.api.error("webhooks/clerk", "Error checking for existing user", selectError)
       return new Response("Error checking for existing user", { status: 500 })
     }
 
     if (existingAlumni) {
       // User with this email already exists, link the new Clerk ID
-      const { error: updateError } = await supabase
+      const { error: updateError } = await supabaseAdmin
         .from("alumni")
         .update({ clerkUserId: clerk_id })
         .eq("id", existingAlumni.id)
 
       if (updateError) {
-        console.error("Error linking Clerk ID to existing user:", updateError)
+        logger.api.error("webhooks/clerk", "Error linking Clerk ID to existing user", updateError)
         return new Response("Error linking user", { status: 500 })
       }
     } else {
       // User does not exist, create a new alumni record
-      const { error: insertError } = await supabase.from("alumni").insert([
+      const { error: insertError } = await supabaseAdmin.from("alumni").insert([
         {
           clerkUserId: clerk_id,
           firstName: first_name,
@@ -94,7 +91,7 @@ export async function POST(req: Request) {
       ])
 
       if (insertError) {
-        console.error("Error creating new alumni record:", insertError)
+        logger.api.error("webhooks/clerk", "Error creating new alumni record", insertError)
         return new Response("Error creating user", { status: 500 })
       }
     }

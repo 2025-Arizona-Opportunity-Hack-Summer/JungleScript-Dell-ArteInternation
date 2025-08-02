@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { auth, currentUser } from "@clerk/nextjs/server"
 import { supabaseAdmin } from "@/lib/supabaseAdmin"
 import { createServerSupabaseClient } from "@/lib/supabase-server"
+import { logger } from "@/lib/logger"
 
 export async function GET() {
   try {
@@ -20,7 +21,7 @@ export async function GET() {
         // This means no record was found, which is a valid case for a new user.
         return NextResponse.json(null)
       }
-      console.error("Error fetching alumni profile:", error)
+      logger.api.error("alumni/profile", "Error fetching alumni profile", error)
       return new NextResponse("Internal Server Error", { status: 500 })
     }
 
@@ -32,7 +33,7 @@ export async function GET() {
 
     return NextResponse.json(profileData)
   } catch (error) {
-    console.error("[ALUMNI_PROFILE_GET]", error)
+    logger.api.error("alumni/profile", "Unexpected error in GET", error)
     return new NextResponse("Internal Server Error", { status: 500 })
   }
 }
@@ -87,7 +88,7 @@ export async function POST(req: Request) {
             coordinates = { longitude, latitude }
           }
         } catch (err) {
-          console.error("Geocoding failed:", err)
+          logger.api.error("alumni/profile", "Geocoding failed", err)
         }
       }
     }
@@ -133,7 +134,7 @@ export async function POST(req: Request) {
         .single()
 
       if (error) {
-        console.error("Error linking alumni account:", error)
+        logger.api.error("alumni/profile", "Error linking alumni account", error)
         return new NextResponse("Failed to save profile", { status: 500 })
       }
       return NextResponse.json(data)
@@ -146,13 +147,13 @@ export async function POST(req: Request) {
         .single()
 
       if (error) {
-        console.error("Error creating new alumni profile:", error)
+        logger.api.error("alumni/profile", "Error creating new alumni profile", error)
         return new NextResponse("Failed to save profile", { status: 500 })
       }
       return NextResponse.json(data)
     }
   } catch (error) {
-    console.error("[ALUMNI_PROFILE_POST]", error)
+    logger.api.error("alumni/profile", "Unexpected error in POST", error)
     return new NextResponse("Internal Server Error", { status: 500 })
   }
 } 

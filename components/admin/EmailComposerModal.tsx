@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { Mail, Send, Plus, Eye, ChevronDown, ChevronUp } from "lucide-react"
+import { logger } from "@/lib/logger"
 import { type AlumniProfile } from "@/lib/alumni-store"
 
 interface EmailComposerModalProps {
@@ -168,7 +169,7 @@ export function EmailComposerModal({ isOpen, onOpenChange, recipients }: EmailCo
         alert("Failed to send email.")
       }
     } catch (error) {
-      console.error("Error sending email:", error)
+              logger.error("Error sending email", error)
       alert("An error occurred while sending the email.")
     }
     setIsSending(false)

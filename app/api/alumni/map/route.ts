@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { auth } from "@clerk/nextjs/server"
 import { supabaseAdmin } from "@/lib/supabaseAdmin"
+import { logger } from "@/lib/logger"
 
 export async function GET() {
   try {
@@ -23,13 +24,13 @@ export async function GET() {
     const { data, error } = await query
 
     if (error) {
-      console.error("Error fetching alumni for map:", error)
+      logger.api.error("alumni/map", "Error fetching alumni for map", error)
       return new NextResponse("Internal Server Error", { status: 500 })
     }
 
     return NextResponse.json(data)
   } catch (error) {
-    console.error("[ALUMNI_MAP_GET]", error)
+    logger.api.error("alumni/map", "GET request failed", error)
     return new NextResponse("Internal Server Error", { status: 500 })
   }
 } 

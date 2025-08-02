@@ -3,13 +3,15 @@
 import type React from "react"
 
 import { useState } from "react"
+
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Upload, FileText, CheckCircle, XCircle, AlertCircle, Download } from "lucide-react"
 
-import { supabase } from "@/lib/supabase"
 import { useAlumniStore } from "@/lib/alumni-store"
+import { logger } from "@/lib/logger"
 
 interface ValidationResult {
   valid: any[]
@@ -57,15 +59,27 @@ export default function DataImport() {
           throw new Error("JSON file must contain an array of alumni records.")
         }
 
-        if (!supabase) {
-          throw new Error("Supabase client is not available. Check your environment variables.")
+        // admin import operations require admin privileges
+        logger.debug("Starting import validation", {
+          recordCount: records.length,
+          useApiRoute: true
+        })
+
+        // Use API route for server-side database operations
+        const response = await fetch("/api/admin/alumni", {
+          method: "GET",
+          credentials: "include",
+        })
+
+        if (!response.ok) {
+          throw new Error(`Failed to fetch existing alumni: ${response.statusText}`)
         }
 
-        const { data: existingAlumni, error: fetchError } = await supabase.from("alumni").select("email")
+        const existingAlumni = await response.json()
 
-        if (fetchError) {
-          throw new Error(`Error fetching existing alumni: ${fetchError.message}`)
-        }
+        logger.debug("Existing alumni fetched successfully", {
+          existingCount: existingAlumni?.length || 0
+        })
 
         const existingEmails = new Set(existingAlumni.map((a) => a.email))
 
@@ -117,23 +131,46 @@ export default function DataImport() {
 
     setIsImporting(true)
 
-    if (!supabase) {
+    // Remove id fields to let PostgreSQL auto-generate them
+    const recordsWithoutIds = validationResult.valid.map(record => {
+      const { id, ...recordWithoutId } = record
+      return recordWithoutId
+    })
+
+    logger.debug("Starting database insert operation via API", {
+      recordCount: recordsWithoutIds.length,
+      sampleRecord: recordsWithoutIds[0],
+      removedIdFields: true
+    })
+
+    // Use API route for bulk insert
+    const importResponse = await fetch("/api/admin/alumni/bulk-import", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
+      body: JSON.stringify({ records: recordsWithoutIds }),
+    })
+
+    if (!importResponse.ok) {
+      const errorData = await importResponse.json().catch(() => ({ error: importResponse.statusText }))
+      logger.error("Database insert failed via API", {
+        status: importResponse.status,
+        statusText: importResponse.statusText,
+        errorData: errorData,
+        recordCount: recordsWithoutIds.length
+      })
       setValidationResult((prev) => ({
         ...prev!,
-        errors: [...(prev?.errors || []), { record: 0, error: "Supabase client is not available." }],
-      }))
-      setIsImporting(false)
-      return
-    }
-
-    const { error } = await supabase.from("alumni").insert(validationResult.valid)
-
-    if (error) {
-      setValidationResult((prev) => ({
-        ...prev!,
-        errors: [...(prev?.errors || []), { record: 0, error: `Import failed: ${error.message}` }],
+        errors: [...(prev?.errors || []), { record: 0, error: `Import failed: ${errorData.error || importResponse.statusText}` }],
       }))
     } else {
+      const result = await importResponse.json()
+      logger.debug("Database insert successful via API", {
+        recordCount: recordsWithoutIds.length,
+        insertedCount: result.insertedCount || 'unknown'
+      })
       setImportComplete(true)
       await fetchAlumni() // Refresh the alumni store
     }

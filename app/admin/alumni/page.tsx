@@ -48,6 +48,8 @@ import {
   X,
 } from "lucide-react"
 import { useAlumniStore, type AlumniProfile } from "@/lib/alumni-store"
+import { logger } from "@/lib/logger"
+import { EmailComposerModal } from "@/components/admin/EmailComposerModal"
 import type { ReactElement } from "react"
 import type { NextPage } from "next"
 import { z } from "zod"
@@ -392,7 +394,7 @@ const EditForm = ({
   )
 }
 
-import { EmailComposerModal } from "@/components/admin/EmailComposerModal"
+
 
 const AlumniCard = React.memo(({ alumni, onSelect, isSelected, onEdit, onDelete }: { alumni: AlumniProfile; onSelect: (alumni: AlumniProfile) => void; isSelected: boolean; onEdit: (alumni: AlumniProfile) => void; onDelete: (alumni: AlumniProfile) => void; }) => (
     <Card 
@@ -491,7 +493,7 @@ const [tagFilterMode, setTagFilterMode] = useState<"OR" | "AND">("OR")
     const checkMobile = () => {
       const isNowMobile = window.innerWidth < 768
       if(isNowMobile) {
-        console.log("Mobile view activated");
+        logger.debug("Mobile view activated");
       }
       setIsMobile(isNowMobile);
     }
@@ -605,7 +607,7 @@ const [tagFilterMode, setTagFilterMode] = useState<"OR" | "AND">("OR")
       setShowDeleteDialog(false)
       setSelectedAlumniForActions([])
     } catch (error) {
-      console.error("Failed to delete alumni:", error)
+              logger.error("Failed to delete alumni", error)
     } finally {
       setIsSubmitting(false)
     }
@@ -737,27 +739,25 @@ const [tagFilterMode, setTagFilterMode] = useState<"OR" | "AND">("OR")
         }
       }
 
-      console.log("=== SAVE ALUMNI START ===")
-      console.log("Editing alumni:", editingAlumni)
-      console.log("Original alumni:", originalAlumni)
+          logger.debug("Save alumni operation started", { editingAlumni, originalAlumni })
 
       if (showAddModal) {
-        console.log("Adding new alumni")
+        logger.debug("Adding new alumni")
         await addAlumni(editingAlumni)
       } else if (originalAlumni) {
         // Only send changed fields for updates
         const changes = getChangedFields(originalAlumni, editingAlumni)
-        console.log("Detected changes:", changes)
+        logger.debug("Detected changes", changes)
 
         if (Object.keys(changes).length > 0) {
-          console.log("Updating alumni with changes:", changes)
+          logger.debug("Updating alumni with changes", changes)
           await updateAlumni(editingAlumni)
-        } else {
-          console.log("No changes detected, skipping update")
+              } else {
+        logger.debug("No changes detected, skipping update")
         }
       } else {
         // Fallback: send all data if we don't have original
-        console.log("No original data, sending all fields")
+        logger.debug("No original data, sending all fields")
         await updateAlumni(editingAlumni)
       }
 
@@ -765,9 +765,9 @@ const [tagFilterMode, setTagFilterMode] = useState<"OR" | "AND">("OR")
       setShowAddModal(false)
       setEditingAlumni(null)
       setOriginalAlumni(null)
-      console.log("=== SAVE ALUMNI SUCCESS ===")
+      logger.debug("Save alumni operation completed successfully")
     } catch (error) {
-      console.error("Failed to save alumni:", error)
+      logger.error("Failed to save alumni", error)
       setSaveError(error instanceof Error ? error.message : "Failed to save alumni")
     } finally {
       setIsSubmitting(false)
@@ -1337,7 +1337,7 @@ const [tagFilterMode, setTagFilterMode] = useState<"OR" | "AND">("OR")
             <span className="text-sm font-medium">{selectedAlumniForActions.length} selected</span>
             <div className="flex space-x-2">
               <Button variant="outline" size="sm" onClick={() => {
-                console.log("Opening email modal from mobile bar");
+                logger.debug("Opening email modal from mobile bar");
                 setShowEmailModal(true)
               }}>
                 <Mail className="h-4 w-4 mr-2" />

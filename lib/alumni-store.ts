@@ -1,8 +1,9 @@
 "use client"
 
 import { create } from "zustand"
-import { supabase, isSupabaseConfigured } from "./supabase"
+import { isSupabaseConfigured } from "./config"
 import { demoAlumni } from "./demo-data"
+import { logger } from "./logger"
 
 export interface AlumniProfile {
   id: number
@@ -62,8 +63,7 @@ interface AlumniStore {
   deleteAlumni: (id: number) => Promise<void>
 }
 
-// No longer needed
-// const transformSupabaseToAlumni = (supabaseObj: any): AlumniProfile => { ... }
+// alumni store now uses API routes for all database operations
 
 export const useAlumniStore = create<AlumniStore>((set, get) => ({
   alumni: [],
@@ -75,12 +75,12 @@ export const useAlumniStore = create<AlumniStore>((set, get) => ({
 
     try {
       if (!isSupabaseConfigured) {
-        console.log("Supabase not configured, using demo data")
+        logger.info("Supabase not configured, using demo data")
         set({ alumni: demoAlumni, loading: false })
         return
       }
 
-      console.log("Fetching alumni through API...")
+      logger.debug("Fetching alumni through API...")
       // Use the admin API route which handles both admin and user permissions properly
       const response = await fetch("/api/admin/alumni", {
         method: "GET",
@@ -94,7 +94,7 @@ export const useAlumniStore = create<AlumniStore>((set, get) => ({
       const data = await response.json()
       set({ alumni: data || [], loading: false })
     } catch (error) {
-      console.error("Error fetching alumni:", error)
+      logger.error("Error fetching alumni", error)
       set({
         alumni: demoAlumni,
         loading: false,
@@ -108,7 +108,7 @@ export const useAlumniStore = create<AlumniStore>((set, get) => ({
 
     try {
       if (!isSupabaseConfigured) {
-        console.log("Supabase not configured, adding to local state only")
+        logger.info("Supabase not configured, adding to local state only")
         const alumni = get().alumni
         const newId = Math.max(...alumni.map((a) => a.id), 0) + 1
         const alumniWithId = { ...newAlumni, id: newId }
@@ -143,7 +143,7 @@ export const useAlumniStore = create<AlumniStore>((set, get) => ({
 
     try {
       if (!isSupabaseConfigured) {
-        console.log("Supabase not configured, updating local state only")
+        logger.info("Supabase not configured, updating local state only")
         set({
           alumni: get().alumni.map((a) => (a.id === updatedAlumni.id ? updatedAlumni : a)),
         })
@@ -179,7 +179,7 @@ export const useAlumniStore = create<AlumniStore>((set, get) => ({
 
     try {
       if (!isSupabaseConfigured) {
-        console.log("Supabase not configured, deleting from local state only")
+        logger.info("Supabase not configured, deleting from local state only")
         set({ alumni: get().alumni.filter((a) => a.id !== id) })
         return
       }

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { auth } from "@clerk/nextjs/server"
 import { createServerSupabaseClient } from "@/lib/supabase-server"
 import { supabaseAdmin } from "@/lib/supabaseAdmin"
+import { logger } from "@/lib/logger"
 
 // PUT /api/admin/alumni/[id] - Update alumni
 export async function PUT(
@@ -15,7 +16,9 @@ export async function PUT(
       return new NextResponse("Unauthorized", { status: 401 })
     }
 
-    const alumniId = parseInt(params.id)
+    // Await params for Next.js 15 compatibility
+    const { id } = await params
+    const alumniId = parseInt(id)
     if (isNaN(alumniId)) {
       return new NextResponse("Invalid alumni ID", { status: 400 })
     }
@@ -33,7 +36,7 @@ export async function PUT(
         .single()
 
       if (error) {
-        console.error("Error updating alumni (admin):", error)
+        logger.api.error("admin/alumni/[id]", "Error updating alumni (admin)", error)
         return new NextResponse("Failed to update alumni", { status: 500 })
       }
 
@@ -49,7 +52,7 @@ export async function PUT(
         .single()
 
       if (error) {
-        console.error("Error updating alumni (user):", error)
+        logger.api.error("admin/alumni/[id]", "Error updating alumni (user)", error)
         if (error.code === "PGRST116") {
           return new NextResponse("Not found or access denied", { status: 404 })
         }
@@ -59,7 +62,7 @@ export async function PUT(
       return NextResponse.json(data)
     }
   } catch (error) {
-    console.error("[ADMIN_ALUMNI_PUT]", error)
+    logger.api.error("admin/alumni/[id]", "PUT request failed", error)
     return new NextResponse("Internal Server Error", { status: 500 })
   }
 }
@@ -83,7 +86,9 @@ export async function DELETE(
       return new NextResponse("Forbidden - Admin access required", { status: 403 })
     }
 
-    const alumniId = parseInt(params.id)
+    // Await params for Next.js 15 compatibility  
+    const { id } = await params
+    const alumniId = parseInt(id)
     if (isNaN(alumniId)) {
       return new NextResponse("Invalid alumni ID", { status: 400 })
     }
@@ -95,13 +100,13 @@ export async function DELETE(
       .eq("id", alumniId)
 
     if (error) {
-      console.error("Error deleting alumni:", error)
+      logger.api.error("admin/alumni/[id]", "Error deleting alumni", error)
       return new NextResponse("Failed to delete alumni", { status: 500 })
     }
 
     return new NextResponse(null, { status: 204 })
   } catch (error) {
-    console.error("[ADMIN_ALUMNI_DELETE]", error)
+    logger.api.error("admin/alumni/[id]", "DELETE request failed", error)
     return new NextResponse("Internal Server Error", { status: 500 })
   }
 }

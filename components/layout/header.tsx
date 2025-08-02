@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle, SheetDescription, SheetClose } from "@/components/ui/sheet"
@@ -20,18 +20,14 @@ import {
 import { SignOutButton } from "@clerk/nextjs"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { ChevronDown } from "lucide-react"
+import { getUserAuthData, getNavigationItems } from "@/lib/auth-utils"
 
 export default function Header() {
-  const { user, isLoaded } = useUser()
-  const [isAdmin, setIsAdmin] = useState(false)
+  const { user, isLoaded } = useUser()  
   const [isMenuOpen, setIsMenuOpen] = useState(false)
-
-  useEffect(() => {
-    if (isLoaded && user) {
-      const userRole = user.publicMetadata?.role as string | undefined
-      setIsAdmin(userRole === "admin")
-    }
-  }, [isLoaded, user])
+  
+  // use centralized auth utilities (with type casting for client-side compatibility)
+  const { isAdmin } = getUserAuthData(user as any, isLoaded)
 
   if (!isLoaded) {
     return (
@@ -68,19 +64,21 @@ export default function Header() {
     )
   }
 
-  const adminNavItems = [
-    { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
-    { href: "/admin/alumni", label: "Alumni", icon: Users },
-    { href: "/admin/import", label: "Import", icon: Upload },
-    { href: "/map", label: "Map", icon: Map },
-  ]
-
-  const alumniNavItems = [
-    { href: "/map", label: "Map", icon: Map },
-    { href: "/alumni/profile", label: "My Profile", icon: UserCircle },
-  ]
-
-  const navItems = isAdmin ? adminNavItems : alumniNavItems
+  // navigation items with icons (extend centralized function)
+  const baseNavItems = getNavigationItems(isAdmin)
+  const navItemsWithIcons = baseNavItems.map((item: any) => {
+    const iconMap: Record<string, any> = {
+      "Dashboard": LayoutDashboard,
+      "Alumni": Users, 
+      "Import": Upload,
+      "Map": Map,
+      "Profile": UserCircle,
+    }
+    return {
+      ...item,
+      icon: iconMap[item.label] || Map
+    }
+  })
 
   return (
     <header className="relative flex h-16 items-center justify-between border-b bg-white px-4 md:px-6">
@@ -93,7 +91,7 @@ export default function Header() {
 
       <nav className="hidden md:flex items-center space-x-2 absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
         {isAdmin &&
-          adminNavItems.map((item) => (
+          navItemsWithIcons.map((item) => (
             <Link key={item.label} href={item.href}>
               <Button variant="ghost">
                 <span>{item.label}</span>
@@ -119,7 +117,7 @@ export default function Header() {
                 </SheetDescription>
               </SheetHeader>
               <div className="flex flex-col space-y-4 p-4">
-                {navItems.map((item) => (
+                {navItemsWithIcons.map((item) => (
                   <SheetClose asChild key={item.label}>
                     <Link href={item.href}>
                       <Button variant="ghost" className="w-full justify-start space-x-2">

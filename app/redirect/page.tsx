@@ -3,48 +3,39 @@
 import { useEffect } from "react"
 import { useUser } from "@clerk/nextjs"
 import { useRouter } from "next/navigation"
+import { getPostSigninRedirect, AuthLoadingStates } from "@/lib/auth-utils"
+import { logger } from "@/lib/logger"
 
 export default function RedirectPage() {
   const { user, isLoaded } = useUser()
   const router = useRouter()
 
   useEffect(() => {
-    if (isLoaded) {
-      if (user?.publicMetadata?.role === "admin") {
-        router.push("/admin/dashboard")
-      } else {
-        // Check if user has an alumni profile before redirecting
-        checkUserProfile()
-      }
+    if (isLoaded && user) {
+      handleRedirect()
     }
   }, [user, isLoaded, router])
 
-  const checkUserProfile = async () => {
+  const handleRedirect = async () => {
     try {
-      const response = await fetch("/api/alumni/profile")
-      if (response.ok) {
-        const profileData = await response.json()
-        if (profileData) {
-          // User has a profile, go to map
-          router.push("/map")
-        } else {
-          // No profile exists, redirect to create one
-          router.push("/register")
-        }
-      } else {
-        // Error fetching profile, assume they need to create one
-        router.push("/register")
+      const redirectResult = await getPostSigninRedirect(user)
+      if (redirectResult.shouldRedirect && redirectResult.redirectTo) {
+        logger.debug("Post-signin redirect", {
+          redirectTo: redirectResult.redirectTo,
+          reason: redirectResult.reason
+        })
+        router.push(redirectResult.redirectTo)
       }
     } catch (error) {
-      console.error("Error checking user profile:", error)
-      // On error, redirect to register to be safe
+      logger.error("Error handling post-signin redirect", error)
+      // Fallback to register page
       router.push("/register")
     }
   }
 
   return (
     <div className="flex h-screen items-center justify-center">
-      <p>Loading...</p>
+      <p>{AuthLoadingStates.redirecting}</p>
     </div>
   )
 } 

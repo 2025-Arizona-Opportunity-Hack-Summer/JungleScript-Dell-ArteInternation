@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { useEffect } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
+import { getAuthenticatedUserRedirect, AuthLoadingStates } from "@/lib/auth-utils"
 
 export default function HomePage() {
   const { user, isLoaded } = useUser()
@@ -12,11 +13,9 @@ export default function HomePage() {
 
   useEffect(() => {
     if (isLoaded && user) {
-      const isAdmin = user.publicMetadata?.role === "admin"
-      if (isAdmin) {
-        router.push("/admin/dashboard")
-      } else {
-        router.push("/map")
+      const redirectResult = getAuthenticatedUserRedirect(user)
+      if (redirectResult.shouldRedirect && redirectResult.redirectTo) {
+        router.push(redirectResult.redirectTo)
       }
     }
   }, [isLoaded, user, router])
@@ -24,7 +23,7 @@ export default function HomePage() {
   if (!isLoaded) {
     return (
       <div className="flex-1 flex items-center justify-center">
-        <div>Loading...</div>
+        <div>{AuthLoadingStates.checking}</div>
       </div>
     )
   }
@@ -50,7 +49,7 @@ export default function HomePage() {
 
   return (
     <div className="flex-1 flex items-center justify-center">
-      <div>Loading...</div>
+      <div>{AuthLoadingStates.redirecting}</div>
     </div>
   )
 }

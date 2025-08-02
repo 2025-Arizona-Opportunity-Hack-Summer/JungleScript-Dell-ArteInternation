@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import formData from "form-data";
 import Mailgun from "mailgun.js";
+import { logger } from "@/lib/logger"
 
 const API_KEY = process.env.MAILGUN_API_KEY || "";
 const DOMAIN = process.env.MAILGUN_DOMAIN || "";
@@ -31,7 +32,7 @@ export async function POST(req: NextRequest) {
       await client.messages.create(DOMAIN, messageData);
       return NextResponse.json({ message: "Test email sent successfully" });
     } catch (error) {
-      console.error("Error sending test email:", error);
+      logger.api.error("email", "Error sending test email", error);
       return NextResponse.json(
         { message: "Error sending test email" },
         { status: 500 }
@@ -84,7 +85,7 @@ export async function POST(req: NextRequest) {
       await client.messages.create(DOMAIN, messageData);
       return NextResponse.json({ message: "Bulk email sent successfully" });
     } catch (error) {
-      console.error("Error sending bulk email:", error);
+      logger.api.error("email", "Error sending bulk email", error);
       return NextResponse.json(
         { message: "Error sending bulk email" },
         { status: 500 }
