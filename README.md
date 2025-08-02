@@ -77,6 +77,8 @@ The administrative dashboard provides key metrics including total alumni count (
 - Supabase account
 - Clerk account  
 - Mapbox account
+- Mailgun account (with verified domain for production email functionality)
+- Domain name (required for email functionality in production)
 
 ### Installation
 
@@ -97,7 +99,24 @@ pnpm install
 ```bash
 cp .env.example .env.local
 ```
-Add your API keys for Supabase, Clerk, Mapbox, and other services.
+
+Configure the following environment variables in your `.env.local` file:
+
+**Required API Keys & Configuration:**
+- `NEXT_PUBLIC_SUPABASE_URL` - Your Supabase project URL
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY` - Your Supabase anonymous key
+- `SUPABASE_SERVICE_ROLE_KEY` - Your Supabase service role key (server-side)
+- `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` - Your Clerk publishable key
+- `CLERK_SECRET_KEY` - Your Clerk secret key
+- `NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN` - Your Mapbox access token
+- `MAILGUN_API_KEY` - Your Mailgun API key
+- `MAILGUN_DOMAIN` - Your verified Mailgun domain
+
+**⚠️ Important Email Configuration Note:**
+Mailgun requires a verified domain to send emails to external recipients. If you're running this locally without a proper domain setup:
+- Emails will only work for sandbox testing (limited recipients)  
+- The admin communication features will not function properly
+- You'll need to verify a domain in your Mailgun account for production use
 
 4. **Run the development server**
 ```bash
@@ -108,6 +127,20 @@ pnpm dev
 
 5. **Open your browser**
 Navigate to [http://localhost:3000](http://localhost:3000)
+
+### Admin Demo Account
+
+For testing and demonstration purposes, you can use the following admin account:
+
+- **Email:** `kennytrung0603@icloud.com`
+- **Password:** `Clover7-Endanger-Dupe`
+
+This account has full administrative privileges and can be used to:
+- Access the admin dashboard
+- Manage alumni records
+- Send bulk communications
+- Import/export data
+- View analytics and reports
 
 ## 🏆 Achievements We're Proud Of
 
@@ -140,6 +173,7 @@ Navigate to [http://localhost:3000](http://localhost:3000)
 
 ## 🔗 Quick Links
 
+- **Live Demo**: [Dell'Arte Alumni Network](https://dellartejungle-zl1zvkmzu-kenny-nguyens-projects.vercel.app/)
 - **Nonprofit Partner**: [Dell'Arte International](https://ohack.dev/nonprofit/eObX4Ig63NLCKuKGN8P6) 
 - **Hackathon**: [2025 Summer Opportunity Hack](https://www.ohack.dev/hack/2025_summer)
 - **Team Slack**: [#junglescript](https://opportunity-hack.slack.com/app_redirect?channel=junglescript)
