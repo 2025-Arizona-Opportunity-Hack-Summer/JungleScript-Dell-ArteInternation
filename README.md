@@ -19,7 +19,7 @@
 
 - **🗺️ Interactive Alumni Map**: Mapbox-powered global visualization of alumni locations with search and filtering
 - **👤 Rich Alumni Profiles**: Comprehensive profiles including programs attended, professional information, and biography
-- **🔍 Smart Search & Discovery**: Find alumni by name, location, program, professional tags, or current organization  
+- **🔍 Smart Search & Discovery**: Find alumni by name, location, or program 
 - **📊 Admin Dashboard**: Real-time analytics and management tools for staff
 - **📧 Communication Tools**: Bulk email capabilities for targeted outreach
 - **📱 Mobile Responsive**: Seamless experience across all devices
