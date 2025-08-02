@@ -1,10 +1,18 @@
 import { NextResponse } from "next/server"
 
 export async function POST(request: Request) {
-  const { city, country } = await request.json()
+  const { city, country, query } = await request.json()
 
-  if (!city || !country) {
-    return NextResponse.json({ error: "City and country are required" }, { status: 400 })
+  // support both old format (city, country) and new format (full query)
+  let searchQuery: string
+  if (query) {
+    searchQuery = query
+  } else if (city && country) {
+    searchQuery = `${city}, ${country}`
+  } else if (city) {
+    searchQuery = city
+  } else {
+    return NextResponse.json({ error: "City, country, or query is required" }, { status: 400 })
   }
 
   const mapboxApiKey = process.env.NEXT_PUBLIC_MAPBOX_API
@@ -13,8 +21,8 @@ export async function POST(request: Request) {
   }
 
   const endpoint = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(
-    city,
-  )},${encodeURIComponent(country)}.json?access_token=${mapboxApiKey}&limit=1`
+    searchQuery,
+  )}.json?access_token=${mapboxApiKey}&limit=1`
 
   try {
     const response = await fetch(endpoint)

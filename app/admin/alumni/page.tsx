@@ -711,30 +711,66 @@ const [tagFilterMode, setTagFilterMode] = useState<"OR" | "AND">("OR")
     setSaveError(null)
 
     try {
-      // Geocode address if it has changed
+      // geocode address if it has changed
       if (
         showAddModal ||
         (originalAlumni &&
           (originalAlumni.address.city !== editingAlumni.address.city ||
+            originalAlumni.address.state !== editingAlumni.address.state ||
             originalAlumni.address.country !== editingAlumni.address.country))
       ) {
-        if (editingAlumni.address.city && editingAlumni.address.country) {
-          const response = await fetch("/api/geocode", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              city: editingAlumni.address.city,
-              country: editingAlumni.address.country,
-            }),
-          })
+        if (editingAlumni.address.city) {
+          // improved geocoding with multiple fallback attempts
+          const geocodeAttempts = []
+          
+          // attempt 1: city, state, country (most specific)
+          if (editingAlumni.address.city && editingAlumni.address.state && editingAlumni.address.country) {
+            geocodeAttempts.push(`${editingAlumni.address.city}, ${editingAlumni.address.state}, ${editingAlumni.address.country}`)
+          }
+          
+          // attempt 2: city, country (original logic)
+          if (editingAlumni.address.city && editingAlumni.address.country) {
+            geocodeAttempts.push(`${editingAlumni.address.city}, ${editingAlumni.address.country}`)
+          }
+          
+          // attempt 3: city, state (for US addresses without explicit country)
+          if (editingAlumni.address.city && editingAlumni.address.state) {
+            geocodeAttempts.push(`${editingAlumni.address.city}, ${editingAlumni.address.state}`)
+            // also try with US as country for state abbreviations
+            geocodeAttempts.push(`${editingAlumni.address.city}, ${editingAlumni.address.state}, United States`)
+          }
+          
+          // attempt 4: just city as last resort
+          geocodeAttempts.push(editingAlumni.address.city)
+          
+          let geocodeSuccess = false
+          
+          // try each geocoding attempt until one succeeds
+          for (const searchQuery of geocodeAttempts) {
+            try {
+              const response = await fetch("/api/geocode", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  query: searchQuery // use the new query parameter for full address strings
+                }),
+              })
 
-          if (response.ok) {
-            const { latitude, longitude } = await response.json()
-            editingAlumni.address.latitude = latitude
-            editingAlumni.address.longitude = longitude
-          } else {
-            const { error } = await response.json()
-            throw new Error(`Geocoding failed: ${error}`)
+              if (response.ok) {
+                const { latitude, longitude } = await response.json()
+                editingAlumni.address.latitude = latitude
+                editingAlumni.address.longitude = longitude
+                geocodeSuccess = true
+                console.log(`Geocoding successful with: ${searchQuery}`)
+                break // success, exit the loop
+              }
+            } catch (err) {
+              console.warn(`Geocoding attempt failed for: ${searchQuery}`, err)
+            }
+          }
+          
+          if (!geocodeSuccess) {
+            console.warn('All geocoding attempts failed for address:', editingAlumni.address)
           }
         }
       }

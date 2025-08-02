@@ -74,22 +74,57 @@ export async function POST(req: Request) {
 
     // --- Geocoding Step ---
     let coordinates = {}
-    if (address.city && address.country) {
-      const mapboxApiKey = process.env.NEXT_PUBLIC_MAPBOX_API
-      if (mapboxApiKey) {
-        const endpoint = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(
-          address.city,
-        )},${encodeURIComponent(address.country)}.json?access_token=${mapboxApiKey}&limit=1`
+    
+    // improved geocoding with multiple fallback attempts
+    const mapboxApiKey = process.env.NEXT_PUBLIC_MAPBOX_API
+    if (mapboxApiKey && address.city) {
+      const geocodeAttempts = []
+      
+      // attempt 1: city, state, country (most specific)
+      if (address.city && address.state && address.country) {
+        geocodeAttempts.push(`${address.city}, ${address.state}, ${address.country}`)
+      }
+      
+      // attempt 2: city, country (original logic)
+      if (address.city && address.country) {
+        geocodeAttempts.push(`${address.city}, ${address.country}`)
+      }
+      
+      // attempt 3: city, state (for US addresses without explicit country)
+      if (address.city && address.state) {
+        geocodeAttempts.push(`${address.city}, ${address.state}`)
+        // also try with US as country for state abbreviations
+        geocodeAttempts.push(`${address.city}, ${address.state}, United States`)
+      }
+      
+      // attempt 4: just city as last resort
+      if (address.city) {
+        geocodeAttempts.push(address.city)
+      }
+      
+      // try each geocoding attempt until one succeeds
+      for (const searchQuery of geocodeAttempts) {
         try {
+          const endpoint = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(
+            searchQuery,
+          )}.json?access_token=${mapboxApiKey}&limit=1`
+          
           const response = await fetch(endpoint)
           const data = await response.json()
+          
           if (data.features && data.features.length > 0) {
             const [longitude, latitude] = data.features[0].center
             coordinates = { longitude, latitude }
+            logger.api.info("alumni/profile", `Geocoding successful with: ${searchQuery}`)
+            break // success, exit the loop
           }
         } catch (err) {
-          logger.api.error("alumni/profile", "Geocoding failed", err)
+          logger.api.error("alumni/profile", `Geocoding attempt failed for: ${searchQuery}`, err)
         }
+      }
+      
+      if (!("longitude" in coordinates) && !("latitude" in coordinates)) {
+        logger.api.error("alumni/profile", "All geocoding attempts failed", { address })
       }
     }
     // --- End Geocoding Step ---
