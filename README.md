@@ -59,14 +59,17 @@ Our solution directly addresses Dell'Arte International's need to:
 
 ## 📱 Screenshots
 
-*Interactive Alumni Map with Global Coverage*
-![Alumni Map](https://via.placeholder.com/600x400/3B82F6/FFFFFF?text=Interactive+Alumni+Map)
+### Interactive Alumni Map with Global Coverage
+![Alumni Map](./assets/CleanShot%202025-08-02%20at%2014.19.33@2x.png)
+The world map shows alumni distributed globally with an intuitive sidebar for browsing network members. Users can search and filter alumni by location, with interactive markers showing exact positions worldwide.
 
-*Comprehensive Alumni Profiles*
-![Alumni Profile](https://via.placeholder.com/600x400/10B981/FFFFFF?text=Alumni+Profile+Management)
+### Comprehensive Alumni Profile Management  
+![Profile Management](./assets/CleanShot%202025-08-02%20at%2014.20.26@2x.png)
+The profile editing interface allows alumni to update their personal information, contact details, and address with a clean, user-friendly design that ensures data accuracy and easy navigation.
 
-*Admin Dashboard with Analytics*
-![Admin Dashboard](https://via.placeholder.com/600x400/F59E0B/FFFFFF?text=Admin+Dashboard)
+### Admin Dashboard with Real-time Analytics
+![Admin Dashboard](./assets/CleanShot%202025-08-02%20at%2014.20.02@2x.png)
+The administrative dashboard provides key metrics including total alumni count (15), recent registrations (5 in 30 days), and active users (5), along with quick action buttons for managing alumni, viewing the map, and importing data.
 
 ## 🏃‍♀️ Getting Started
 
